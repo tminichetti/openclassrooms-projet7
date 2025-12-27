@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/0a5484ce13774d21b4a70fc1fb3fd706/artifacts
+end_time: 1765835569915
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: 0a5484ce13774d21b4a70fc1fb3fd706
+run_name: BiLSTM_GloVe_Lemmatization
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765835388334
+status: 3
+tags: []
+user_id: Thomas

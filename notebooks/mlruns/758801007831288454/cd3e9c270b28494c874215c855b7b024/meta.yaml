@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/cd3e9c270b28494c874215c855b7b024/artifacts
+end_time: 1765864488701
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: cd3e9c270b28494c874215c855b7b024
+run_name: CNN_GloVe_Lemmatization
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765863383889
+status: 3
+tags: []
+user_id: Thomas

@@ -1,0 +1,14 @@
+artifact_uri: mlflow-artifacts:/485765988085415446/596f3836ad424993bcf7fdc60b762ac8/artifacts
+end_time: 1766003841764
+entry_point_name: ''
+experiment_id: '485765988085415446'
+lifecycle_stage: active
+run_id: 596f3836ad424993bcf7fdc60b762ac8
+run_name: BERT-base-uncased
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766003473759
+status: 4
+tags: []
+user_id: Thomas

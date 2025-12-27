@@ -1,0 +1,10 @@
+artifact_location: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/models/m-17a646c4024d4af98acda355fb9fb066/artifacts
+creation_timestamp: 1765835563599
+experiment_id: '758801007831288454'
+last_updated_timestamp: 1765835569899
+model_id: m-17a646c4024d4af98acda355fb9fb066
+model_type: null
+name: model
+source_run_id: 0a5484ce13774d21b4a70fc1fb3fd706
+status: 2
+status_message: null

@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/f72db0c2d83945e18313db0413aa96a1/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: f72db0c2d83945e18313db0413aa96a1
+run_name: LSTM_Random_Embeddings
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764928552489
+status: 1
+tags: []
+user_id: thomas

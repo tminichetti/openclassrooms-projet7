@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/860f0878df1e4aaeb32946437b3daee7/artifacts
+end_time: 1765835388271
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: 860f0878df1e4aaeb32946437b3daee7
+run_name: BiLSTM_Word2Vec_Stemming
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765835224404
+status: 3
+tags: []
+user_id: Thomas

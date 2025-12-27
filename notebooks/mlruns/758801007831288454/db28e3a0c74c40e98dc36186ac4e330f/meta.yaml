@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/db28e3a0c74c40e98dc36186ac4e330f/artifacts
+end_time: 1765834901342
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: db28e3a0c74c40e98dc36186ac4e330f
+run_name: LogisticRegression_TfidfVectorizer
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765834890592
+status: 3
+tags: []
+user_id: Thomas

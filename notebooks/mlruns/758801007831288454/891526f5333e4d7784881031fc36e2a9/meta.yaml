@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/thomas/Documents/code/openclassrooms-projects/projet7/notebooks/mlruns/758801007831288454/891526f5333e4d7784881031fc36e2a9/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '758801007831288454'
+lifecycle_stage: active
+run_id: 891526f5333e4d7784881031fc36e2a9
+run_name: BiLSTM_Word2Vec_Lemmatization
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765538124835
+status: 1
+tags: []
+user_id: thomas
