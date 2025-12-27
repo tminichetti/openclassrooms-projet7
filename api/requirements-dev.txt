@@ -1,0 +1,34 @@
+# Development Requirements
+
+# Include main requirements
+-r requirements.txt
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-asyncio==0.21.1
+httpx==0.25.2  # Pour tester FastAPI
+faker==20.1.0  # Pour générer des données de test
+
+# Code Quality
+black==23.11.0  # Code formatting
+flake8==6.1.0  # Linting
+pylint==3.0.3  # Advanced linting
+mypy==1.7.1  # Type checking
+isort==5.12.0  # Import sorting
+
+# Security
+safety==2.3.5  # Scan des vulnérabilités
+bandit==1.7.5  # Scan de sécurité du code
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Jupyter (pour développement)
+jupyter==1.0.0
+ipykernel==6.27.1
+
+# Utilities
+pre-commit==3.5.0  # Git hooks
+python-dotenv==1.0.0

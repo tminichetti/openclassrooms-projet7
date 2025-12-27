@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: airparadis-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_TYPE=${MODEL_TYPE:-bert}
+      - MODEL_PATH=/app/models/bert_sentiment_model
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Monter les modèles depuis le host
+      - ../models:/app/models:ro
+      # Monter les logs
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - airparadis-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Streamlit Service (interface utilisateur)
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: airparadis-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - airparadis-network
+
+  # MLFlow Tracking Server (optionnel)
+  mlflow:
+    image: python:3.9-slim
+    container_name: airparadis-mlflow
+    ports:
+      - "5001:5001"
+    volumes:
+      - ../mlruns:/mlruns
+    command: >
+      sh -c "pip install mlflow &&
+             mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri /mlruns"
+    restart: unless-stopped
+    networks:
+      - airparadis-network
+
+networks:
+  airparadis-network:
+    driver: bridge
+
+volumes:
+  mlruns:
