@@ -380,8 +380,20 @@ async def debug_files():
     Endpoint de debug pour vérifier les fichiers présents
     """
     import glob
+    import sklearn
+
+    vectorizer_info = {}
+    if vectorizer is not None:
+        vectorizer_info = {
+            "type": str(type(vectorizer)),
+            "has_idf": hasattr(vectorizer, "idf_"),
+            "has_vocabulary": hasattr(vectorizer, "vocabulary_"),
+            "vocabulary_size": len(vectorizer.vocabulary_) if hasattr(vectorizer, "vocabulary_") else 0,
+        }
+
     return {
         "cwd": os.getcwd(),
+        "sklearn_version": sklearn.__version__,
         "model_path": MODEL_PATH,
         "model_path_exists": os.path.exists(MODEL_PATH),
         "models_dir": os.path.exists("./models"),
@@ -390,6 +402,7 @@ async def debug_files():
         "api_models_files": glob.glob("api/models/*") if os.path.exists("api/models") else [],
         "model_loaded": model is not None,
         "vectorizer_loaded": vectorizer is not None,
+        "vectorizer_info": vectorizer_info,
     }
 
 
