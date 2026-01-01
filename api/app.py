@@ -374,6 +374,25 @@ async def get_models():
     )
 
 
+@app.get("/debug/files")
+async def debug_files():
+    """
+    Endpoint de debug pour vérifier les fichiers présents
+    """
+    import glob
+    return {
+        "cwd": os.getcwd(),
+        "model_path": MODEL_PATH,
+        "model_path_exists": os.path.exists(MODEL_PATH),
+        "models_dir": os.path.exists("./models"),
+        "models_files": glob.glob("./models/*") if os.path.exists("./models") else [],
+        "api_models_dir": os.path.exists("api/models"),
+        "api_models_files": glob.glob("api/models/*") if os.path.exists("api/models") else [],
+        "model_loaded": model is not None,
+        "vectorizer_loaded": vectorizer is not None,
+    }
+
+
 @app.post("/predict", response_model=PredictionOutput, status_code=status.HTTP_200_OK)
 async def predict_sentiment(tweet: TweetInput):
     """
