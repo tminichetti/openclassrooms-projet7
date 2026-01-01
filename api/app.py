@@ -50,8 +50,8 @@ app.add_middleware(
 )
 
 # Variables globales pour les modèles
-MODEL_TYPE = os.getenv("MODEL_TYPE", "bert")  # bert, lstm, cnn, logistic
-MODEL_PATH = os.getenv("MODEL_PATH", "../models/bert_sentiment_model")
+MODEL_TYPE = os.getenv("MODEL_TYPE", "logistic")  # bert, lstm, cnn, logistic
+MODEL_PATH = os.getenv("MODEL_PATH", "./models/logistic_regression_model.pkl")
 model = None
 tokenizer = None
 vectorizer = None
@@ -161,9 +161,20 @@ def load_logistic_model(model_path: str):
         model = joblib.load(model_path)
 
         # Charger le vectorizer TF-IDF associé
-        vectorizer_path = model_path.replace('_model.pkl', '_vectorizer.pkl')
+        # Chercher d'abord dans le même dossier
+        base_dir = os.path.dirname(model_path)
+        vectorizer_path = os.path.join(base_dir, 'tfidf_vectorizer.pkl')
+
+        if not os.path.exists(vectorizer_path):
+            # Fallback sur l'ancien chemin
+            vectorizer_path = model_path.replace('logistic_regression_model.pkl', 'tfidf_vectorizer.pkl')
+
         if os.path.exists(vectorizer_path):
             vectorizer = joblib.load(vectorizer_path)
+            logger.info(f"Vectorizer chargé depuis {vectorizer_path}")
+        else:
+            logger.error(f"Vectorizer non trouvé: {vectorizer_path}")
+            return False
 
         logger.info("Modèle logistique chargé avec succès")
         return True

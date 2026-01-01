@@ -58,12 +58,23 @@ mlartifacts/
 
 # Models (trop volumineux pour Git)
 *.h5
-*.pkl
 *.joblib
 *.pt
 *.pth
-models/
 saved_models/
+
+# Exclure tous les modèles par défaut, sauf les modèles légers
+models/*.h5
+models/*.pt
+models/*.pth
+models/bert_sentiment_model/
+models/best_deep_learning_model.h5
+models/tokenizer.pkl
+models/model_metadata.pkl
+
+# Autoriser les modèles légers (logistic regression)
+!models/logistic_regression_model.pkl
+!models/tfidf_vectorizer.pkl
 
 # Data (trop volumineux)
 data/

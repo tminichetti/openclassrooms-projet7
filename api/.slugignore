@@ -1,0 +1,37 @@
+# Fichiers à ignorer lors du build Heroku pour réduire la taille du slug
+
+# Tests
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache/
+
+# Documentation
+*.md
+docs/
+*.txt.example
+
+# Development
+.git/
+.github/
+.vscode/
+.idea/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Docker files
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# MLFlow local
+mlruns/
+mlartifacts/
+
+# Cache
+__pycache__/
+*.pyc
+.cache/
