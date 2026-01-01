@@ -176,28 +176,43 @@ def load_logistic_model(model_path: str):
     global model, vectorizer
     try:
         logger.info(f"Chargement du modèle logistique depuis {model_path}")
+        logger.info(f"Chemin absolu: {os.path.abspath(model_path)}")
+        logger.info(f"Fichier existe: {os.path.exists(model_path)}")
+
         model = joblib.load(model_path)
+        logger.info(f"Modèle chargé: {type(model)}")
 
         # Charger le vectorizer TF-IDF associé
         # Chercher d'abord dans le même dossier
         base_dir = os.path.dirname(model_path)
+        logger.info(f"Base dir: {base_dir}")
+
         vectorizer_path = os.path.join(base_dir, 'tfidf_vectorizer.pkl')
+        logger.info(f"Tentative 1 - Chemin vectorizer: {vectorizer_path}")
+        logger.info(f"Tentative 1 - Existe: {os.path.exists(vectorizer_path)}")
 
         if not os.path.exists(vectorizer_path):
             # Fallback sur l'ancien chemin
             vectorizer_path = model_path.replace('logistic_regression_model.pkl', 'tfidf_vectorizer.pkl')
+            logger.info(f"Tentative 2 - Chemin vectorizer: {vectorizer_path}")
+            logger.info(f"Tentative 2 - Existe: {os.path.exists(vectorizer_path)}")
 
         if os.path.exists(vectorizer_path):
             vectorizer = joblib.load(vectorizer_path)
-            logger.info(f"Vectorizer chargé depuis {vectorizer_path}")
+            logger.info(f"Vectorizer chargé depuis {vectorizer_path}: {type(vectorizer)}")
         else:
             logger.error(f"Vectorizer non trouvé: {vectorizer_path}")
+            # Lister les fichiers dans le dossier models
+            if os.path.exists(base_dir):
+                logger.info(f"Contenu de {base_dir}: {os.listdir(base_dir)}")
             return False
 
         logger.info("Modèle logistique chargé avec succès")
         return True
     except Exception as e:
         logger.error(f"Erreur lors du chargement du modèle logistique: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 
@@ -335,6 +350,9 @@ async def health_check():
     Health check pour vérifier que l'API fonctionne
     """
     model_loaded = model is not None
+
+    # Log supplémentaire pour debug
+    logger.info(f"Health check: model={model is not None}, vectorizer={vectorizer is not None}, tokenizer={tokenizer is not None}")
 
     return HealthResponse(
         status="healthy" if model_loaded else "degraded",
