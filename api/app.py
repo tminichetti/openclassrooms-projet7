@@ -21,8 +21,16 @@ from datetime import datetime
 import os
 import joblib
 import numpy as np
-import tensorflow as tf
-from transformers import BertTokenizer, TFBertForSequenceClassification
+
+# Imports conditionnels pour les modèles lourds (uniquement si nécessaire)
+try:
+    import tensorflow as tf
+    from transformers import BertTokenizer, TFBertForSequenceClassification
+    TF_AVAILABLE = True
+except ImportError:
+    TF_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("TensorFlow/Transformers non disponibles. Seul le modèle logistique sera utilisable.")
 
 # Configuration du logging
 logging.basicConfig(
@@ -123,6 +131,11 @@ class ModelInfo(BaseModel):
 def load_bert_model():
     """Charge le modèle BERT et son tokenizer"""
     global model, tokenizer
+
+    if not TF_AVAILABLE:
+        logger.error("TensorFlow/Transformers non installés. Impossible de charger BERT.")
+        return False
+
     try:
         logger.info(f"Chargement du modèle BERT depuis {MODEL_PATH}")
         model = TFBertForSequenceClassification.from_pretrained(MODEL_PATH)
@@ -137,6 +150,11 @@ def load_bert_model():
 def load_dl_model(model_path: str):
     """Charge un modèle Deep Learning (LSTM/CNN)"""
     global model, vectorizer, tokenizer
+
+    if not TF_AVAILABLE:
+        logger.error("TensorFlow non installé. Impossible de charger le modèle Deep Learning.")
+        return False
+
     try:
         logger.info(f"Chargement du modèle DL depuis {model_path}")
         model = tf.keras.models.load_model(model_path)
