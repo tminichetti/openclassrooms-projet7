@@ -200,6 +200,16 @@ def load_logistic_model(model_path: str):
         if os.path.exists(vectorizer_path):
             vectorizer = joblib.load(vectorizer_path)
             logger.info(f"Vectorizer chargé depuis {vectorizer_path}: {type(vectorizer)}")
+
+            # CRITICAL: Vérifier que le vectorizer a l'attribut idf_
+            if not hasattr(vectorizer, 'idf_'):
+                logger.error("ERREUR: Le vectorizer n'a pas d'attribut idf_!")
+                logger.error("Cela indique un problème de sérialisation ou de version scikit-learn")
+                logger.error(f"Attributs du vectorizer: {dir(vectorizer)}")
+                return False
+            else:
+                logger.info(f"✓ Vectorizer OK: idf_ shape = {vectorizer.idf_.shape}")
+
         else:
             logger.error(f"Vectorizer non trouvé: {vectorizer_path}")
             # Lister les fichiers dans le dossier models
