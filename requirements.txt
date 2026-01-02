@@ -8,7 +8,7 @@ python-multipart==0.0.6
 pydantic==2.5.0
 
 # ML Libraries (uniquement pour modèle logistique)
-scikit-learn==1.3.2
+scikit-learn==1.7.2
 joblib==1.3.2
 
 # Data Processing
