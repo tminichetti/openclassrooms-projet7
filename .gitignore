@@ -1,3 +1,8 @@
 .venv/
 
 data/
+
+# Fichiers de modèles volumineux
+models/**/*.h5
+models/**/*.bin
+*.h5
