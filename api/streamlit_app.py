@@ -17,6 +17,10 @@ import plotly.express as px
 from datetime import datetime
 import os
 import time
+import logging
+
+# Configuration du logging pour Application Insights
+logging.basicConfig(level=logging.INFO)
 
 # Configuration de la page
 st.set_page_config(
@@ -28,6 +32,33 @@ st.set_page_config(
 
 # Configuration de l'API
 API_URL = os.getenv("API_URL", "http://localhost:8000")
+
+# Configuration Azure Application Insights (optionnel)
+APPINSIGHTS_INSTRUMENTATION_KEY = os.getenv("APPINSIGHTS_INSTRUMENTATION_KEY", "")
+APPINSIGHTS_CONNECTION_STRING = os.getenv("APPINSIGHTS_CONNECTION_STRING", "")
+
+# Flag pour activer/désactiver Application Insights
+USE_APP_INSIGHTS = bool(APPINSIGHTS_CONNECTION_STRING or APPINSIGHTS_INSTRUMENTATION_KEY)
+
+# Importer Application Insights si disponible
+if USE_APP_INSIGHTS:
+    try:
+        from opencensus.ext.azure.log_exporter import AzureLogHandler
+        logger = logging.getLogger(__name__)
+
+        if APPINSIGHTS_CONNECTION_STRING:
+            logger.addHandler(AzureLogHandler(connection_string=APPINSIGHTS_CONNECTION_STRING))
+        elif APPINSIGHTS_INSTRUMENTATION_KEY:
+            logger.addHandler(AzureLogHandler(instrumentation_key=APPINSIGHTS_INSTRUMENTATION_KEY))
+
+        logger.info("Application Insights configuré avec succès")
+    except ImportError:
+        USE_APP_INSIGHTS = False
+        logger = logging.getLogger(__name__)
+        logger.warning("opencensus-ext-azure non installé. Les traces ne seront pas envoyées à Application Insights.")
+else:
+    logger = logging.getLogger(__name__)
+    logger.info("Application Insights non configuré (pas de clé d'instrumentation)")
 
 # Custom CSS
 st.markdown("""
@@ -138,6 +169,46 @@ def predict_sentiment(text):
             return None, f"Erreur {response.status_code}: {response.text}"
     except Exception as e:
         return None, f"Erreur de connexion: {str(e)}"
+
+
+def send_feedback_to_appinsights(text, predicted_sentiment, actual_sentiment, confidence, model_type):
+    """
+    Envoie un feedback utilisateur à Azure Application Insights
+
+    Args:
+        text: Le texte du tweet
+        predicted_sentiment: Sentiment prédit par le modèle
+        actual_sentiment: Sentiment réel indiqué par l'utilisateur
+        confidence: Niveau de confiance de la prédiction
+        model_type: Type de modèle utilisé
+    """
+    if USE_APP_INSIGHTS:
+        try:
+            logger.warning(
+                f"Prédiction incorrecte détectée par l'utilisateur",
+                extra={
+                    'custom_dimensions': {
+                        'event_type': 'incorrect_prediction',
+                        'text': text[:100],  # Limiter à 100 caractères
+                        'text_length': len(text),
+                        'predicted_sentiment': predicted_sentiment,
+                        'actual_sentiment': actual_sentiment,
+                        'confidence': confidence,
+                        'model_type': model_type,
+                        'timestamp': datetime.now().isoformat(),
+                        'source': 'streamlit_interface'
+                    }
+                }
+            )
+            logger.info(f"Trace envoyée à Application Insights: prédiction incorrecte pour '{text[:50]}...'")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur lors de l'envoi à Application Insights: {e}")
+            return False
+    else:
+        # Mode debug local : afficher dans la console
+        logger.info(f"[LOCAL DEBUG] Prédiction incorrecte: '{text[:50]}...' - Prédit: {predicted_sentiment}, Réel: {actual_sentiment}")
+        return False
 
 
 def predict_batch(tweets):
@@ -260,6 +331,96 @@ if mode == "Tweet unique":
                 # JSON brut
                 with st.expander("🔍 Voir la réponse JSON complète"):
                     st.json(result)
+
+                # Validation utilisateur
+                st.divider()
+                st.subheader("✅ Validation de la prédiction")
+
+                st.info("💡 Votre feedback nous aide à améliorer le modèle en continu")
+
+                col1, col2, col3 = st.columns([2, 2, 1])
+
+                with col1:
+                    if st.button("✅ Prédiction correcte", type="secondary", use_container_width=True, key="correct"):
+                        st.success("Merci pour votre validation ! 😊")
+                        logger.info(f"Validation positive pour: {tweet_text[:50]}...")
+
+                with col2:
+                    if st.button("❌ Prédiction incorrecte", type="secondary", use_container_width=True, key="incorrect"):
+                        # Demander le vrai sentiment
+                        st.session_state.show_correction = True
+
+                # Si l'utilisateur a cliqué "Incorrect", afficher les options de correction
+                if st.session_state.get('show_correction', False):
+                    st.warning("⚠️ Quelle était la bonne réponse ?")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        if st.button("😊 En réalité, c'était POSITIF", use_container_width=True, key="correct_positive"):
+                            # Envoyer la trace à Application Insights
+                            sent = send_feedback_to_appinsights(
+                                text=tweet_text,
+                                predicted_sentiment=sentiment_label,
+                                actual_sentiment="Positif",
+                                confidence=confidence,
+                                model_type=result["model_type"]
+                            )
+
+                            if USE_APP_INSIGHTS and sent:
+                                st.success("✅ Merci ! Trace envoyée à Azure Application Insights pour amélioration du modèle")
+                            else:
+                                st.success("✅ Merci ! Feedback enregistré (mode local - Application Insights non configuré)")
+
+                            st.session_state.show_correction = False
+
+                    with col2:
+                        if st.button("😞 En réalité, c'était NÉGATIF", use_container_width=True, key="correct_negative"):
+                            # Envoyer la trace à Application Insights
+                            sent = send_feedback_to_appinsights(
+                                text=tweet_text,
+                                predicted_sentiment=sentiment_label,
+                                actual_sentiment="Négatif",
+                                confidence=confidence,
+                                model_type=result["model_type"]
+                            )
+
+                            if USE_APP_INSIGHTS and sent:
+                                st.success("✅ Merci ! Trace envoyée à Azure Application Insights pour amélioration du modèle")
+                            else:
+                                st.success("✅ Merci ! Feedback enregistré (mode local - Application Insights non configuré)")
+
+                            st.session_state.show_correction = False
+
+                # Info sur Application Insights
+                with st.expander("ℹ️ Comment fonctionne le feedback ?"):
+                    st.markdown("""
+                    **Système de feedback et amélioration continue**
+
+                    Lorsque vous indiquez qu'une prédiction est incorrecte :
+
+                    1. 📊 **Trace envoyée à Azure Application Insights** avec :
+                       - Le texte du tweet
+                       - La prédiction du modèle
+                       - Le sentiment réel selon vous
+                       - Le niveau de confiance
+                       - L'horodatage
+
+                    2. 🔍 **Analyse régulière** par l'équipe Data Science :
+                       - Identification des patterns d'erreurs
+                       - Détection des nouveaux mots/expressions
+                       - Évaluation de la dérive du modèle
+
+                    3. 🔄 **Ré-entraînement du modèle** :
+                       - Avec les corrections utilisateurs
+                       - Amélioration continue de la précision
+                       - Tests et validation avant déploiement
+
+                    **Configuration actuelle** :
+                    - Application Insights : {'✅ Activé' if USE_APP_INSIGHTS else '❌ Non configuré (mode local)'}
+                    - Les traces incorrectes sont marquées avec le niveau `WARNING`
+                    - Accessibles dans le portail Azure pour analyse
+                    """)
 
 
 # Mode: Analyse batch
