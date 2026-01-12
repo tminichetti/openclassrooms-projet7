@@ -1,30 +1,20 @@
-# API Requirements - Air Paradis Sentiment Analysis (Heroku - Logistic Model)
-# Version optimisée pour déploiement avec modèle léger
+# Streamlit Application Requirements
 
-# Core API
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
-pydantic==2.5.0
-
-# ML Libraries (uniquement pour modèle logistique)
-scikit-learn==1.7.2
-joblib==1.3.2
+# Streamlit
+streamlit>=1.28.0
 
 # Data Processing
-pandas==2.1.3
-numpy>=1.24.3,<2.0.0
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
+
+# Visualization
+plotly>=5.0.0
+
+# API Calls
+requests>=2.31.0
 
 # Utilities
-python-dotenv==1.0.0
-requests==2.31.0
+python-dotenv>=1.0.0
 
-# Logging and Monitoring
-opencensus-ext-azure==1.1.13
-
-# Production Server
-gunicorn==21.2.0
-
-# Note: TensorFlow, Transformers, Torch ne sont PAS nécessaires pour le modèle logistique
-# Ils sont trop lourds pour Heroku gratuit (>500MB)
-# Pour utiliser BERT, voir requirements-full.txt ou utiliser un service avec plus de mémoire
+# Azure Application Insights (optionnel - pour monitoring)
+opencensus-ext-azure>=1.1.0
