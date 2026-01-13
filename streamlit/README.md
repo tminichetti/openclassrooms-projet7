@@ -14,10 +14,10 @@ Interface utilisateur pour tester l'API de sentiment analysis avec système de v
 Dans Streamlit Cloud → Settings → Secrets :
 
 ```toml
-API_URL = "https://openclassrooms-projet7-5e5ebd15aa21.herokuapp.com"
+API_URL = "https://votre-api.herokuapp.com"
 
 # PostHog Analytics (optionnel - pour tracking des feedbacks)
-POSTHOG_API_KEY = "phx_2u4dbbg075A8yzkwoEQgL0RyASH66ppxg0jzAqRNLgZauYV"
+POSTHOG_API_KEY = ""
 POSTHOG_HOST = "https://app.posthog.com"
 ```
 
