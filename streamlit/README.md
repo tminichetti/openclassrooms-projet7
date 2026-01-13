@@ -14,7 +14,7 @@ Interface utilisateur pour tester l'API de sentiment analysis avec système de v
 Dans Streamlit Cloud → Settings → Secrets :
 
 ```toml
-API_URL = "https://ton-api.herokuapp.com"
+API_URL = "https://openclassrooms-projet7-5e5ebd15aa21.herokuapp.com"
 ```
 
 ## Test local
