@@ -16,5 +16,5 @@ requests>=2.31.0
 # Utilities
 python-dotenv>=1.0.0
 
-# Azure Application Insights (optionnel - pour monitoring)
-opencensus-ext-azure>=1.1.0
+# PostHog Analytics (optionnel - pour tracking et analytics)
+posthog>=3.0.0

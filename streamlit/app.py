@@ -33,32 +33,29 @@ st.set_page_config(
 # Configuration de l'API
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-# Configuration Azure Application Insights (optionnel)
-APPINSIGHTS_INSTRUMENTATION_KEY = os.getenv("APPINSIGHTS_INSTRUMENTATION_KEY", "")
-APPINSIGHTS_CONNECTION_STRING = os.getenv("APPINSIGHTS_CONNECTION_STRING", "")
+# Configuration PostHog Analytics (optionnel)
+POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", "")
+POSTHOG_HOST = os.getenv("POSTHOG_HOST", "https://app.posthog.com")
 
-# Flag pour activer/désactiver Application Insights
-USE_APP_INSIGHTS = bool(APPINSIGHTS_CONNECTION_STRING or APPINSIGHTS_INSTRUMENTATION_KEY)
+# Flag pour activer/désactiver PostHog
+USE_POSTHOG = bool(POSTHOG_API_KEY)
 
-# Importer Application Insights si disponible
-if USE_APP_INSIGHTS:
+# Importer PostHog si disponible
+posthog = None
+if USE_POSTHOG:
     try:
-        from opencensus.ext.azure.log_exporter import AzureLogHandler
+        import posthog
+        posthog.api_key = POSTHOG_API_KEY
+        posthog.host = POSTHOG_HOST
         logger = logging.getLogger(__name__)
-
-        if APPINSIGHTS_CONNECTION_STRING:
-            logger.addHandler(AzureLogHandler(connection_string=APPINSIGHTS_CONNECTION_STRING))
-        elif APPINSIGHTS_INSTRUMENTATION_KEY:
-            logger.addHandler(AzureLogHandler(instrumentation_key=APPINSIGHTS_INSTRUMENTATION_KEY))
-
-        logger.info("Application Insights configuré avec succès")
+        logger.info("PostHog configuré avec succès")
     except ImportError:
-        USE_APP_INSIGHTS = False
+        USE_POSTHOG = False
         logger = logging.getLogger(__name__)
-        logger.warning("opencensus-ext-azure non installé. Les traces ne seront pas envoyées à Application Insights.")
+        logger.warning("posthog non installé. Les événements ne seront pas trackés.")
 else:
     logger = logging.getLogger(__name__)
-    logger.info("Application Insights non configuré (pas de clé d'instrumentation)")
+    logger.info("PostHog non configuré (pas de clé API)")
 
 # Custom CSS
 st.markdown("""
@@ -171,9 +168,9 @@ def predict_sentiment(text):
         return None, f"Erreur de connexion: {str(e)}"
 
 
-def send_feedback_to_appinsights(text, predicted_sentiment, actual_sentiment, confidence, model_type):
+def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, confidence, model_type):
     """
-    Envoie un feedback utilisateur à Azure Application Insights
+    Envoie un feedback utilisateur à PostHog Analytics
 
     Args:
         text: Le texte du tweet
@@ -182,28 +179,33 @@ def send_feedback_to_appinsights(text, predicted_sentiment, actual_sentiment, co
         confidence: Niveau de confiance de la prédiction
         model_type: Type de modèle utilisé
     """
-    if USE_APP_INSIGHTS:
+    if USE_POSTHOG:
         try:
-            logger.warning(
-                f"Prédiction incorrecte détectée par l'utilisateur",
-                extra={
-                    'custom_dimensions': {
-                        'event_type': 'incorrect_prediction',
-                        'text': text[:100],  # Limiter à 100 caractères
-                        'text_length': len(text),
-                        'predicted_sentiment': predicted_sentiment,
-                        'actual_sentiment': actual_sentiment,
-                        'confidence': confidence,
-                        'model_type': model_type,
-                        'timestamp': datetime.now().isoformat(),
-                        'source': 'streamlit_interface'
-                    }
+            # Générer un ID utilisateur unique basé sur la session
+            user_id = st.session_state.get('user_id', f"user_{datetime.now().timestamp()}")
+            if 'user_id' not in st.session_state:
+                st.session_state.user_id = user_id
+
+            # Envoyer l'événement à PostHog
+            posthog.capture(
+                distinct_id=user_id,
+                event='prediction_feedback',
+                properties={
+                    'feedback_type': 'incorrect_prediction',
+                    'text_preview': text[:100],
+                    'text_length': len(text),
+                    'predicted_sentiment': predicted_sentiment,
+                    'actual_sentiment': actual_sentiment,
+                    'confidence': confidence,
+                    'model_type': model_type,
+                    'timestamp': datetime.now().isoformat(),
+                    'source': 'streamlit_interface'
                 }
             )
-            logger.info(f"Trace envoyée à Application Insights: prédiction incorrecte pour '{text[:50]}...'")
+            logger.info(f"Événement envoyé à PostHog: prédiction incorrecte pour '{text[:50]}...'")
             return True
         except Exception as e:
-            logger.error(f"Erreur lors de l'envoi à Application Insights: {e}")
+            logger.error(f"Erreur lors de l'envoi à PostHog: {e}")
             return False
     else:
         # Mode debug local : afficher dans la console
@@ -359,7 +361,7 @@ if mode == "Tweet unique":
                     with col1:
                         if st.button("😊 En réalité, c'était POSITIF", use_container_width=True, key="correct_positive"):
                             # Envoyer la trace à Application Insights
-                            sent = send_feedback_to_appinsights(
+                            sent = send_feedback_to_analytics(
                                 text=tweet_text,
                                 predicted_sentiment=sentiment_label,
                                 actual_sentiment="Positif",
@@ -367,17 +369,17 @@ if mode == "Tweet unique":
                                 model_type=result["model_type"]
                             )
 
-                            if USE_APP_INSIGHTS and sent:
-                                st.success("✅ Merci ! Trace envoyée à Azure Application Insights pour amélioration du modèle")
+                            if USE_POSTHOG and sent:
+                                st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
                             else:
-                                st.success("✅ Merci ! Feedback enregistré (mode local - Application Insights non configuré)")
+                                st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
 
                             st.session_state.show_correction = False
 
                     with col2:
                         if st.button("😞 En réalité, c'était NÉGATIF", use_container_width=True, key="correct_negative"):
                             # Envoyer la trace à Application Insights
-                            sent = send_feedback_to_appinsights(
+                            sent = send_feedback_to_analytics(
                                 text=tweet_text,
                                 predicted_sentiment=sentiment_label,
                                 actual_sentiment="Négatif",
@@ -385,10 +387,10 @@ if mode == "Tweet unique":
                                 model_type=result["model_type"]
                             )
 
-                            if USE_APP_INSIGHTS and sent:
-                                st.success("✅ Merci ! Trace envoyée à Azure Application Insights pour amélioration du modèle")
+                            if USE_POSTHOG and sent:
+                                st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
                             else:
-                                st.success("✅ Merci ! Feedback enregistré (mode local - Application Insights non configuré)")
+                                st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
 
                             st.session_state.show_correction = False
 
@@ -399,7 +401,7 @@ if mode == "Tweet unique":
 
                     Lorsque vous indiquez qu'une prédiction est incorrecte :
 
-                    1. 📊 **Trace envoyée à Azure Application Insights** avec :
+                    1. 📊 **Trace envoyée à PostHog Analytics** avec :
                        - Le texte du tweet
                        - La prédiction du modèle
                        - Le sentiment réel selon vous
@@ -417,7 +419,7 @@ if mode == "Tweet unique":
                        - Tests et validation avant déploiement
 
                     **Configuration actuelle** :
-                    - Application Insights : {'✅ Activé' if USE_APP_INSIGHTS else '❌ Non configuré (mode local)'}
+                    - Application Insights : {'✅ Activé' if USE_POSTHOG else '❌ Non configuré (mode local)'}
                     - Les traces incorrectes sont marquées avec le niveau `WARNING`
                     - Accessibles dans le portail Azure pour analyse
                     """)
