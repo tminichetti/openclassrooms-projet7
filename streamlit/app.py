@@ -179,10 +179,12 @@ def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, conf
         confidence: Niveau de confiance de la prédiction
         model_type: Type de modèle utilisé
     """
+    logger.info("Envoi du feedback utilisateur à PostHog Analytics")
     if USE_POSTHOG:
         try:
             # Générer un ID utilisateur unique basé sur la session
             user_id = st.session_state.get('user_id', f"user_{datetime.now().timestamp()}")
+            logger.info(f"user_id: {user_id}")
             if 'user_id' not in st.session_state:
                 st.session_state.user_id = user_id
 
