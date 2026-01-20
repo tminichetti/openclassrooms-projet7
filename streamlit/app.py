@@ -61,14 +61,18 @@ logger = logging.getLogger(__name__)
 posthog_client = None
 if USE_POSTHOG:
     try:
-        import posthog as posthog_module
-        posthog_module.project_api_key = POSTHOG_API_KEY
-        posthog_module.host = POSTHOG_HOST
-        posthog_client = posthog_module
-        logger.info("PostHog configuré avec succès")
+        from posthog import Posthog
+        posthog_client = Posthog(
+            project_api_key=POSTHOG_API_KEY,
+            host=POSTHOG_HOST
+        )
+        logger.info(f"PostHog configuré avec succès (key: {POSTHOG_API_KEY[:10]}...)")
     except ImportError:
         USE_POSTHOG = False
         logger.warning("posthog non installé. Les événements ne seront pas trackés.")
+    except Exception as e:
+        USE_POSTHOG = False
+        logger.error(f"Erreur configuration PostHog: {e}")
 else:
     logger.info("PostHog non configuré (pas de clé API)")
 
@@ -309,6 +313,7 @@ if mode == "Tweet unique":
                 st.session_state.last_result = result
                 st.session_state.last_tweet = tweet_text
                 st.session_state.show_correction = False
+                st.session_state.feedback_sent = False  # Reset feedback pour nouvelle analyse
 
     # Afficher le résultat s'il existe dans session_state
     if 'last_result' in st.session_state and st.session_state.last_result:
@@ -389,91 +394,56 @@ if mode == "Tweet unique":
 
         # Validation utilisateur
         st.divider()
-        st.subheader("✅ Validation de la prédiction")
+        st.subheader("🗳️ Cette prédiction est-elle correcte ?")
 
-        st.info("💡 Votre feedback nous aide à améliorer le modèle en continu")
+        # État du feedback
+        if 'feedback_sent' not in st.session_state:
+            st.session_state.feedback_sent = False
 
-        col1, col2, col3 = st.columns([2, 2, 1])
-
-        with col1:
-            if st.button("✅ Prédiction correcte", type="secondary", use_container_width=True, key="correct"):
-                st.success("Merci pour votre validation ! 😊")
-                logger.info(f"Validation positive pour: {tweet_text[:50]}...")
-
-        with col2:
-            if st.button("❌ Prédiction incorrecte", type="secondary", use_container_width=True, key="incorrect"):
-                # Demander le vrai sentiment
-                st.session_state.show_correction = True
-
-        # Si l'utilisateur a cliqué "Incorrect", afficher les options de correction
-        if st.session_state.get('show_correction', False):
-            st.warning("⚠️ Quelle était la bonne réponse ?")
-
+        if not st.session_state.feedback_sent:
             col1, col2 = st.columns(2)
 
             with col1:
-                if st.button("😊 En réalité, c'était POSITIF", use_container_width=True, key="correct_positive"):
-                    # Envoyer la trace à PostHog
-                    sent = send_feedback_to_analytics(
-                        text=tweet_text,
-                        predicted_sentiment=sentiment_label,
-                        actual_sentiment="Positif",
-                        confidence=confidence,
-                        model_type=result["model_type"]
-                    )
-
-                    if USE_POSTHOG and sent:
-                        st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
-                    else:
-                        st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
-
-                    st.session_state.show_correction = False
+                if st.button("👍 Oui, c'est correct", type="primary", use_container_width=True, key="correct"):
+                    st.session_state.feedback_sent = True
+                    st.success("Merci pour votre validation ! 😊")
 
             with col2:
-                if st.button("😞 En réalité, c'était NÉGATIF", use_container_width=True, key="correct_negative"):
-                    # Envoyer la trace à PostHog
-                    sent = send_feedback_to_analytics(
-                        text=tweet_text,
-                        predicted_sentiment=sentiment_label,
-                        actual_sentiment="Négatif",
-                        confidence=confidence,
-                        model_type=result["model_type"]
-                    )
+                if st.button("👎 Non, c'est faux", type="secondary", use_container_width=True, key="incorrect"):
+                    st.session_state.show_correction = True
 
-                    if USE_POSTHOG and sent:
-                        st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
-                    else:
-                        st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
+            # Si l'utilisateur a cliqué "Non", afficher les options de correction
+            if st.session_state.get('show_correction', False):
+                st.markdown("---")
+                st.markdown("**Quel était le vrai sentiment ?**")
 
-                    st.session_state.show_correction = False
+                col1, col2 = st.columns(2)
 
-        # Info sur le feedback
-        with st.expander("ℹ️ Comment fonctionne le feedback ?"):
-            st.markdown(f"""
-**Système de feedback et amélioration continue**
+                with col1:
+                    if st.button("😊 C'était POSITIF", use_container_width=True, key="correct_positive"):
+                        sent = send_feedback_to_analytics(
+                            text=tweet_text,
+                            predicted_sentiment=sentiment_label,
+                            actual_sentiment="Positif",
+                            confidence=confidence,
+                            model_type=result["model_type"]
+                        )
+                        st.session_state.show_correction = False
+                        st.session_state.feedback_sent = True
 
-Lorsque vous indiquez qu'une prédiction est incorrecte :
-
-1. 📊 **Trace envoyée à PostHog Analytics** avec :
-   - Le texte du tweet
-   - La prédiction du modèle
-   - Le sentiment réel selon vous
-   - Le niveau de confiance
-   - L'horodatage
-
-2. 🔍 **Analyse régulière** par l'équipe Data Science :
-   - Identification des patterns d'erreurs
-   - Détection des nouveaux mots/expressions
-   - Évaluation de la dérive du modèle
-
-3. 🔄 **Ré-entraînement du modèle** :
-   - Avec les corrections utilisateurs
-   - Amélioration continue de la précision
-   - Tests et validation avant déploiement
-
-**Configuration actuelle** :
-- PostHog : {'✅ Activé' if USE_POSTHOG else '❌ Non configuré (mode local)'}
-            """)
+                with col2:
+                    if st.button("😞 C'était NÉGATIF", use_container_width=True, key="correct_negative"):
+                        sent = send_feedback_to_analytics(
+                            text=tweet_text,
+                            predicted_sentiment=sentiment_label,
+                            actual_sentiment="Négatif",
+                            confidence=confidence,
+                            model_type=result["model_type"]
+                        )
+                        st.session_state.show_correction = False
+                        st.session_state.feedback_sent = True
+        else:
+            st.success("✅ Merci pour votre feedback !")
 
 
 # Mode: Analyse batch
