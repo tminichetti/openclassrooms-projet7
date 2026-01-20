@@ -394,9 +394,29 @@ if mode == "Tweet unique":
         st.divider()
         st.subheader("🗳️ Cette prédiction est-elle correcte ?")
 
-        # État du feedback
+        # Initialiser les états
         if 'feedback_sent' not in st.session_state:
             st.session_state.feedback_sent = False
+        if 'show_correction' not in st.session_state:
+            st.session_state.show_correction = False
+        if 'pending_feedback' not in st.session_state:
+            st.session_state.pending_feedback = None
+
+        # Traiter le feedback en attente (après rechargement de page)
+        if st.session_state.pending_feedback:
+            actual = st.session_state.pending_feedback
+            st.session_state.pending_feedback = None
+            st.session_state.feedback_sent = True
+            st.session_state.show_correction = False
+
+            # Envoyer maintenant
+            send_feedback_to_analytics(
+                text=tweet_text,
+                predicted_sentiment=sentiment_label,
+                actual_sentiment=actual,
+                confidence=confidence,
+                model_type=result["model_type"]
+            )
 
         if not st.session_state.feedback_sent:
             col1, col2 = st.columns(2)
@@ -404,43 +424,30 @@ if mode == "Tweet unique":
             with col1:
                 if st.button("👍 Oui, c'est correct", type="primary", use_container_width=True, key="correct"):
                     st.session_state.feedback_sent = True
-                    st.success("Merci pour votre validation ! 😊")
+                    st.rerun()
 
             with col2:
                 if st.button("👎 Non, c'est faux", type="secondary", use_container_width=True, key="incorrect"):
                     st.session_state.show_correction = True
+                    st.rerun()
 
-            # Si l'utilisateur a cliqué "Non", afficher les options de correction
-            if st.session_state.get('show_correction', False):
-                st.markdown("---")
-                st.markdown("**Quel était le vrai sentiment ?**")
+        # Afficher les options de correction
+        if st.session_state.show_correction and not st.session_state.feedback_sent:
+            st.warning("**Quel était le vrai sentiment ?**")
 
-                col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-                with col1:
-                    if st.button("😊 C'était POSITIF", use_container_width=True, key="correct_positive"):
-                        sent = send_feedback_to_analytics(
-                            text=tweet_text,
-                            predicted_sentiment=sentiment_label,
-                            actual_sentiment="Positif",
-                            confidence=confidence,
-                            model_type=result["model_type"]
-                        )
-                        st.session_state.show_correction = False
-                        st.session_state.feedback_sent = True
+            with col1:
+                if st.button("😊 C'était POSITIF", use_container_width=True, key="correct_positive"):
+                    st.session_state.pending_feedback = "Positif"
+                    st.rerun()
 
-                with col2:
-                    if st.button("😞 C'était NÉGATIF", use_container_width=True, key="correct_negative"):
-                        sent = send_feedback_to_analytics(
-                            text=tweet_text,
-                            predicted_sentiment=sentiment_label,
-                            actual_sentiment="Négatif",
-                            confidence=confidence,
-                            model_type=result["model_type"]
-                        )
-                        st.session_state.show_correction = False
-                        st.session_state.feedback_sent = True
-        else:
+            with col2:
+                if st.button("😞 C'était NÉGATIF", use_container_width=True, key="correct_negative"):
+                    st.session_state.pending_feedback = "Négatif"
+                    st.rerun()
+
+        if st.session_state.feedback_sent:
             st.success("✅ Merci pour votre feedback !")
 
 
