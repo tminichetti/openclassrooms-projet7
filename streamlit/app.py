@@ -34,27 +34,42 @@ st.set_page_config(
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 # Configuration PostHog Analytics (optionnel)
-POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", "")
-POSTHOG_HOST = os.getenv("POSTHOG_HOST", "https://app.posthog.com")
+# Essayer d'abord les secrets Streamlit, puis les variables d'environnement
+POSTHOG_API_KEY = ""
+POSTHOG_HOST = "https://app.posthog.com"
+
+try:
+    # Streamlit Cloud secrets
+    if "POSTHOG_API_KEY" in st.secrets:
+        POSTHOG_API_KEY = st.secrets["POSTHOG_API_KEY"]
+    if "POSTHOG_HOST" in st.secrets:
+        POSTHOG_HOST = st.secrets["POSTHOG_HOST"]
+except Exception as e:
+    pass
+
+# Fallback sur variables d'environnement
+if not POSTHOG_API_KEY:
+    POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", "")
 
 # Flag pour activer/désactiver PostHog
 USE_POSTHOG = bool(POSTHOG_API_KEY)
 
-# Importer PostHog si disponible
-posthog = None
+# Logger
+logger = logging.getLogger(__name__)
+
+# Importer et configurer PostHog si disponible
+posthog_client = None
 if USE_POSTHOG:
     try:
-        import posthog
-        posthog.api_key = POSTHOG_API_KEY
-        posthog.host = POSTHOG_HOST
-        logger = logging.getLogger(__name__)
+        import posthog as posthog_module
+        posthog_module.project_api_key = POSTHOG_API_KEY
+        posthog_module.host = POSTHOG_HOST
+        posthog_client = posthog_module
         logger.info("PostHog configuré avec succès")
     except ImportError:
         USE_POSTHOG = False
-        logger = logging.getLogger(__name__)
         logger.warning("posthog non installé. Les événements ne seront pas trackés.")
 else:
-    logger = logging.getLogger(__name__)
     logger.info("PostHog non configuré (pas de clé API)")
 
 # Custom CSS
@@ -145,6 +160,17 @@ with st.sidebar:
 
     st.divider()
 
+    # Status PostHog
+    st.subheader("📊 Analytics")
+    if USE_POSTHOG and posthog_client:
+        st.success("✓ PostHog connecté")
+        st.caption(f"Host: {POSTHOG_HOST}")
+    else:
+        st.warning("⚠️ PostHog non configuré")
+        st.caption("Définir POSTHOG_API_KEY")
+
+    st.divider()
+
     # Info
     st.caption("Version 1.0.0")
     st.caption("© 2024 Air Paradis")
@@ -179,17 +205,18 @@ def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, conf
         confidence: Niveau de confiance de la prédiction
         model_type: Type de modèle utilisé
     """
-    logger.info("Envoi du feedback utilisateur à PostHog Analytics")
-    if USE_POSTHOG:
+    # Afficher dans Streamlit pour debug
+    st.info("📤 Envoi du feedback à PostHog...")
+
+    if USE_POSTHOG and posthog_client:
         try:
             # Générer un ID utilisateur unique basé sur la session
             user_id = st.session_state.get('user_id', f"user_{datetime.now().timestamp()}")
-            logger.info(f"user_id: {user_id}")
             if 'user_id' not in st.session_state:
                 st.session_state.user_id = user_id
 
             # Envoyer l'événement à PostHog
-            posthog.capture(
+            posthog_client.capture(
                 distinct_id=user_id,
                 event='prediction_feedback',
                 properties={
@@ -204,14 +231,28 @@ def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, conf
                     'source': 'streamlit_interface'
                 }
             )
+
+            # IMPORTANT: Forcer l'envoi immédiat des événements
+            posthog_client.flush()
+
+            st.success(f"✅ Événement envoyé à PostHog (user: {user_id[:20]}...)")
             logger.info(f"Événement envoyé à PostHog: prédiction incorrecte pour '{text[:50]}...'")
             return True
         except Exception as e:
+            st.error(f"❌ Erreur PostHog: {e}")
             logger.error(f"Erreur lors de l'envoi à PostHog: {e}")
             return False
     else:
-        # Mode debug local : afficher dans la console
-        logger.info(f"[LOCAL DEBUG] Prédiction incorrecte: '{text[:50]}...' - Prédit: {predicted_sentiment}, Réel: {actual_sentiment}")
+        # Mode debug local : afficher dans Streamlit
+        st.warning(f"⚠️ Mode local - PostHog non configuré")
+        st.code(f"""
+Feedback (non envoyé):
+- Texte: {text[:50]}...
+- Prédit: {predicted_sentiment}
+- Réel: {actual_sentiment}
+- Confiance: {confidence:.2%}
+- Modèle: {model_type}
+        """)
         return False
 
 
@@ -602,18 +643,6 @@ elif mode == "Historique":
     )
 
     st.plotly_chart(fig_trend, use_container_width=True)
-
-st.divider()
-st.markdown("""
-<script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init ss us bi os hs es ns capture Bi calculateEventProperties cs register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty ps vs createPersonProfile gs Zr ys opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing ds debug O fs getPageViewId captureTraceFeedback captureTraceMetric Yr".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-    posthog.init('phc_86UA3Ji16WE6TmvrT4yHMm2hLQfE6KNzlb6TMdybaug', {
-        api_host: 'https://eu.i.posthog.com',
-        defaults: '2025-11-30',
-        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
-    })
-</script>
-""", unsafe_allow_html=True)
 
 # Footer
 st.divider()
