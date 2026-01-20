@@ -1,653 +1,458 @@
-# Plan de présentation orale - Projet 7 Air Paradis (20 minutes)
+# Plan de Présentation - Projet 7 Air Paradis (20 minutes)
 
-## Structure générale (timing indicatif)
+## Structure (timing indicatif)
 
 | Section | Durée | Contenu |
 |---------|-------|---------|
 | Introduction | 2 min | Contexte et objectifs |
-| Démarche méthodologique | 4 min | Approches comparées |
-| MLOps et expérimentations | 5 min | MLflow, versioning, tests |
-| Mise en production | 4 min | API, déploiement, monitoring |
-| Résultats et démo | 3 min | Performances et démonstration live |
-| Conclusion et questions | 2 min | Synthèse et ouverture |
+| Données et prétraitement | 3 min | Exploration, nettoyage, NLTK |
+| Modèles comparés | 6 min | Logistique, Deep Learning, BERT |
+| MLOps | 4 min | MLflow tracking, versioning |
+| Résultats et choix | 3 min | Synthèse et justification |
+| Conclusion | 2 min | Bilan et questions |
 
 ---
 
-## DIAPO 1 : Page de titre (0:30)
-**Titre :** Analyse de sentiment des tweets Air Paradis - Démarche MLOps complète
+## DIAPO 1 : Titre (0:30)
+
+**Titre :** Analyse de Sentiment des Tweets - Projet Air Paradis
 
 **Contenu :**
 - Votre nom
 - Date
-- Projet 7 - Data Scientist OpenClassrooms
+- Projet 7 - Parcours Data Scientist OpenClassrooms
 
 **À dire :**
-> "Bonjour, je vais vous présenter mon projet d'analyse de sentiment des tweets pour la compagnie aérienne Air Paradis. Ce projet illustre une démarche MLOps complète, de l'expérimentation à la mise en production avec monitoring continu."
+> "Bonjour, je vais vous présenter mon projet d'analyse de sentiment des tweets pour Air Paradis. L'objectif est de développer un système capable de classifier automatiquement les tweets en positif ou négatif, en comparant plusieurs approches de NLP."
 
 ---
 
-## DIAPO 2 : Contexte et problématique (1:30)
+## DIAPO 2 : Contexte et Problématique (1:30)
+
 **Titre :** Le défi d'Air Paradis
 
 **Contenu :**
-- **Contexte :** 10 000+ tweets/jour mentionnant Air Paradis
+- **Contexte :** Compagnie aérienne recevant des milliers de tweets/jour
 - **Problème :** Analyse manuelle impossible, besoin d'automatisation
-- **Objectif :** Système d'analyse de sentiment temps réel et fiable
-- **Enjeux métier :**
-  - Détection rapide des bad buzz
-  - Amélioration de la satisfaction client
-  - Priorisation des réponses du service client
+- **Dataset :** Sentiment140 - 1.6 million de tweets annotés
+- **Objectif :** Classifier les tweets (positif/négatif) avec haute précision
 
-**Visuels :** Capture d'écran de tweets (anonymisés), graphique volume de tweets
+**Enjeux métier :**
+- Détection rapide des insatisfactions clients
+- Priorisation des réponses du service client
+- Veille sur l'image de marque
 
 **À dire :**
-> "Air Paradis reçoit des milliers de tweets quotidiens. L'analyse manuelle est impossible. L'objectif est de créer un système automatique fiable qui détecte le sentiment de chaque tweet en temps réel pour permettre au service client de réagir rapidement aux insatisfactions."
+> "Air Paradis souhaite automatiser l'analyse des tweets mentionnant leur marque. J'utilise le dataset Sentiment140 de 1.6 million de tweets pour entraîner et comparer différents modèles de classification de sentiments."
 
 ---
 
-## DIAPO 3 : Trois approches comparées (2:00)
-**Titre :** Méthodologie : du simple au complexe
+## DIAPO 3 : Exploration des Données (1:30)
 
-**Contenu :**
-**1. Baseline - TF-IDF + Régression Logistique**
-- Approche classique "bag-of-words"
-- Rapide et interprétable
-- **Résultats :** 74.2% accuracy, F1=0.74
+**Titre :** Analyse exploratoire du dataset
 
-**2. Modèle avancé - Word2Vec + LSTM**
-- Embeddings sémantiques + réseau récurrent
-- Capture du contexte temporel
-- **Résultats :** 76.5% accuracy, F1=0.76
+**Contenu (résultats du notebook 01) :**
+- **Volume :** 1,600,000 tweets
+- **Distribution :** 50% négatifs / 50% positifs (équilibré)
+- **659,775 utilisateurs uniques**
+- **Période :** Avril - Juin 2009
 
-**3. Modèle BERT - Transfer Learning**
-- DistilBERT fine-tuné
-- Compréhension contextuelle profonde
-- **Résultats :** 77.8% accuracy, F1=0.77
+**Caractéristiques des textes :**
+- Longueur moyenne : 74 caractères, 13 mots
+- 46.7% contiennent des mentions (@)
+- 2.3% contiennent des hashtags (#)
+- 4.4% contiennent des URLs
 
-**Visuels :** Schémas des 3 architectures côte à côte
+**Visuels :** Graphiques de distribution des sentiments, histogrammes de longueur
 
 **À dire :**
-> "J'ai comparé trois approches de complexité croissante. La baseline TF-IDF sert de référence. Le modèle LSTM avec Word2Vec améliore significativement les résultats. BERT, basé sur transfer learning, offre les meilleures performances mais au prix d'une complexité accrue."
+> "Le dataset est parfaitement équilibré avec 800,000 tweets positifs et 800,000 négatifs. Les tweets sont courts, en moyenne 13 mots, et près de la moitié contiennent des mentions d'utilisateurs qu'il faudra nettoyer."
 
 ---
 
-## DIAPO 4 : Tableau comparatif détaillé (2:00)
-**Titre :** Comparaison des performances et coûts
+## DIAPO 4 : Prétraitement avec NLTK (1:30)
 
-**Contenu :**
-| Critère | TF-IDF + LR | Word2Vec + LSTM | DistilBERT |
-|---------|-------------|-----------------|------------|
-| **Accuracy** | 74.2% | 76.5% | **77.8%** |
-| **F1-Score** | 0.74 | 0.76 | **0.77** |
-| **ROC-AUC** | 0.81 | 0.84 | **0.86** |
-| **Temps entraînement** | < 1 min | ~15 min | ~45 min |
-| **Taille modèle** | < 1 MB | ~50 MB | ~250 MB |
-| **Temps inférence** | < 10ms | ~50ms | ~200ms |
-| **Coût infrastructure** | Minimal | Moyen | Élevé |
+**Titre :** Nettoyage et préparation des données
 
-**Justification du choix pour la production :**
-✅ **Word2Vec + LSTM** retenu pour :
-- Meilleur rapport performance/coût
-- Temps d'inférence 4x plus rapide que BERT
-- Infrastructure moins coûteuse (CPU suffisant)
-- Gain de 1.3% ne justifie pas un coût 3-4x supérieur
+**Contenu (résultats du notebook 02) :**
+
+**Étapes de nettoyage :**
+1. Suppression des doublons : 18,534 tweets (-1.16%)
+2. Suppression URLs, mentions, hashtags
+3. Tokenisation avec `RegexpTokenizer`
+4. Suppression stopwords (198 mots anglais)
+5. **Lemmatisation** avec `WordNetLemmatizer`
+6. **Stemming** avec `SnowballStemmer` (pour comparaison)
+
+**Résultats :**
+- Dataset après nettoyage : **1,385,537 tweets**
+- Longueur moyenne après : 41 caractères, 6.7 mots
+- Splits : Train 70% / Val 15% / Test 15%
+
+**Exemple :**
+```
+AVANT : @user I love this movie! http://example.com #awesome
+APRÈS : love movie awesome
+```
 
 **À dire :**
-> "Bien que BERT soit le plus performant, j'ai choisi le modèle LSTM pour la production. Le gain de 1.3% d'accuracy ne justifie pas les coûts opérationnels 3 à 4 fois supérieurs. Le modèle LSTM offre le meilleur compromis avec 76.5% d'accuracy et un temps d'inférence 4 fois plus rapide."
+> "Le prétraitement avec NLTK comprend tokenisation, suppression des stopwords, et normalisation. J'ai comparé deux approches : la lemmatisation qui préserve le sens des mots, et le stemming plus agressif. Le dataset final contient 1.38 million de tweets propres."
 
 ---
 
-## DIAPO 5 : MLflow - Tracking des expérimentations (2:00)
-**Titre :** Tracking MLflow : 50+ expérimentations
+## DIAPO 5 : Modèle Simple - Régression Logistique (2:00)
+
+**Titre :** Baseline : TF-IDF + Régression Logistique
+
+**Contenu (résultats du notebook 03) :**
+
+**Architecture :**
+- Vectorisation TF-IDF (10,000 features, bigrammes)
+- Régression Logistique (solver LBFGS)
+- Temps d'entraînement : **11.6 secondes**
+
+**Performances sur Test Set :**
+| Métrique | Score |
+|----------|-------|
+| **Accuracy** | **78.03%** |
+| Precision | 76.86% |
+| Recall | 79.38% |
+| F1-Score | 78.10% |
+| ROC-AUC | 86.08% |
+
+**Interprétabilité :**
+- Top features positives : "can wait", "cant wait", "thank", "glad"
+- Top features négatives : "sad", "bummed", "sick", "disappointed"
+
+**À dire :**
+> "Le modèle baseline atteint 78% d'accuracy en seulement 12 secondes d'entraînement. C'est une excellente référence. L'avantage de ce modèle est son interprétabilité : on peut voir quels mots influencent le plus la prédiction."
+
+---
+
+## DIAPO 6 : Modèles Avancés - Deep Learning (2:00)
+
+**Titre :** Comparaison des approches Deep Learning
+
+**Contenu (résultats du notebook 04) :**
+
+**Expérimentations réalisées :**
+1. **Bi-LSTM + Word2Vec + Lemmatisation**
+2. **Bi-LSTM + Word2Vec + Stemming**
+3. **Bi-LSTM + GloVe + Lemmatisation**
+4. **CNN + GloVe + Lemmatisation**
+
+**Résultats comparatifs (Test Set) :**
+| Modèle | Accuracy | F1-Score | ROC-AUC |
+|--------|----------|----------|---------|
+| BiLSTM + W2V + Lemma | 77.25% | 77.02% | 85.52% |
+| **BiLSTM + W2V + Stem** | **77.51%** | **77.77%** | **85.85%** |
+| BiLSTM + GloVe + Lemma | 76.56% | 76.47% | 84.77% |
+| CNN + GloVe + Lemma | 74.74% | 73.86% | 82.91% |
+
+**Conclusions :**
+- **Stemming > Lemmatisation** (+0.75% F1)
+- **Word2Vec > GloVe** (+0.55% F1) - Word2Vec entraîné sur nos données
+- **Bi-LSTM > CNN** (+2.61% F1) - Meilleure capture du contexte séquentiel
+
+**À dire :**
+> "J'ai testé 4 combinaisons différentes pour respecter les critères d'évaluation : 2 prétraitements, 2 embeddings, 2 architectures. Le meilleur modèle est le Bi-LSTM avec Word2Vec et stemming, atteignant 77.77% de F1-score."
+
+---
+
+## DIAPO 7 : Modèle BERT (2:00)
+
+**Titre :** Fine-tuning BERT pour la classification
+
+**Contenu (résultats du notebook 05) :**
+
+**Configuration :**
+- Modèle : `bert-base-uncased` (110M paramètres)
+- Dataset : 100,000 tweets (pour temps raisonnable)
+- Régularisation : Dropout 0.3, 8 couches freezées
+- Entraînement : 25 epochs, ~5h sur GPU
+
+**Performances sur Test Set :**
+| Métrique | Score |
+|----------|-------|
+| **Accuracy** | **77.82%** |
+| Precision | 79.13% |
+| Recall | 75.12% |
+| F1-Score | 77.07% |
+| ROC-AUC | 86.22% |
+
+**Exemples de prédictions :**
+- "This flight was amazing!" → Positif (98.6% confiance)
+- "Terrible service, never flying again" → Négatif (97.5% confiance)
+- "Delayed for 5 hours, worst airline" → Négatif (99.1% confiance)
+
+**À dire :**
+> "BERT atteint 77.82% d'accuracy avec un très bon ROC-AUC de 86.22%. Le modèle montre une excellente confiance sur les cas clairs. Cependant, l'entraînement a nécessité 5 heures sur GPU contre quelques minutes pour les autres modèles."
+
+---
+
+## DIAPO 8 : Tracking MLflow (2:00)
+
+**Titre :** Suivi des expérimentations avec MLflow
 
 **Contenu :**
+
 **Métriques trackées pour chaque run :**
-- Hyperparamètres (embedding_dim, lstm_units, dropout, learning_rate...)
-- Métriques de performance (accuracy, F1, ROC-AUC)
-- Temps d'entraînement, taille du modèle
-- Courbes d'apprentissage (loss, accuracy par epoch)
+- Hyperparamètres (embedding_dim, lstm_units, dropout, learning_rate)
+- Métriques de performance (accuracy, F1, precision, recall, ROC-AUC)
+- Temps d'entraînement
+- Courbes d'apprentissage
+- Artefacts (modèles, visualisations)
+
+**Expérience : `sentiment-analysis-twitter`**
+- Modèle simple : 1 run
+- Modèles avancés : 4 runs
+- Modèle BERT : 1 run
 
 **Avantages MLflow :**
-- Vue centralisée de toutes les expérimentations
+- Reproductibilité des expérimentations
 - Comparaison visuelle des hyperparamètres
-- Reproductibilité garantie
-- Collaboration facilitée
+- Versioning des modèles
+- Facilité de collaboration
 
 **Visuels :**
-- **CAPTURE OBLIGATOIRE :** Interface MLflow UI avec liste des runs
-- **CAPTURE OBLIGATOIRE :** Graphique de comparaison de 3-4 runs (parallel coordinates plot)
+- **CAPTURE :** Interface MLflow UI avec liste des runs
+- **CAPTURE :** Graphiques de comparaison
 
 **À dire :**
-> "J'ai utilisé MLflow pour tracker plus de 50 expérimentations. Chaque run enregistre automatiquement les hyperparamètres, les métriques, et même les artefacts comme les courbes d'apprentissage. Cela permet de comparer visuellement les résultats et de reproduire exactement n'importe quelle expérimentation."
+> "MLflow m'a permis de tracker toutes mes expérimentations de manière structurée. Chaque run enregistre automatiquement les hyperparamètres et métriques, ce qui facilite la comparaison et garantit la reproductibilité."
 
 ---
 
-## DIAPO 6 : MLflow Model Registry (1:30)
-**Titre :** Gestion du cycle de vie des modèles
+## DIAPO 9 : Versioning et Collaboration (2:00)
+
+**Titre :** Organisation du projet
 
 **Contenu :**
-**États d'un modèle :**
-1. **None** → Expérimentation en cours
-2. **Staging** → Validé, tests d'intégration
-3. **Production** → Déployé en prod (modèle LSTM v5)
-4. **Archived** → Ancienne version conservée
 
-**Versioning :**
-- 12 versions enregistrées
-- Version 5 actuellement en production
-- Possibilité de rollback instantané
-
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** MLflow Model Registry avec versions et stages
-
-**À dire :**
-> "Le Model Registry de MLflow gère le cycle de vie complet des modèles. Chaque version est taggée selon son état. Le modèle en production est clairement identifié et en cas de problème, je peux revenir instantanément à une version antérieure."
-
----
-
-## DIAPO 7 : Versioning et collaboration (1:30)
-**Titre :** GitHub : versioning et collaboration
-
-**Contenu :**
 **Structure du repository :**
 ```
 openclassrooms-projet7/
-├── notebooks/      # Expérimentations
-├── livrables/     # Notebooks finaux
-├── api/           # Code API FastAPI
-├── streamlit/     # Interface utilisateur
-├── data/          # Données
-└── requirements.txt
+├── livrables/
+│   └── notebooks/
+│       ├── 01_preparation_donnees/
+│       │   ├── 01_exploration_donnees.ipynb
+│       │   └── 02_preprocessing.ipynb
+│       ├── 02_modele_classique/
+│       │   └── 03_modele_simple_logistique.ipynb
+│       ├── 03_modele_avance/
+│       │   └── 04_modele_avance_deep_learning.ipynb
+│       └── 04_modele_bert/
+│           └── 05_modele_bert.ipynb
+├── data/
+│   ├── processed/    # Données prétraitées
+│   └── glove.6B.100d.txt
+└── models/           # Modèles sauvegardés
 ```
 
-**Statistiques Git :**
-- 150+ commits sur 6 semaines
-- Branches feature pour développements majeurs
-- Tags pour releases (v1.0-baseline, v2.0-lstm, v3.0-bert)
-
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Historique des commits sur GitHub (graph avec branches)
-- **CAPTURE OBLIGATOIRE :** Arborescence du dossier GitHub
+**Points clés :**
+- Code versionné sur GitHub
+- Notebooks numérotés et organisés par étape
+- Données prétraitées sauvegardées pour reproductibilité
+- Modèles exportables (joblib, h5, pretrained)
 
 **À dire :**
-> "Le projet est entièrement versionné sur GitHub avec plus de 150 commits. La structure est organisée en dossiers logiques. Chaque modification est tracée, permettant de revenir à n'importe quel état du projet."
+> "Le projet est organisé de manière claire avec les notebooks numérotés suivant le flux de travail : exploration, prétraitement, puis les trois types de modèles. Les données prétraitées sont sauvegardées pour garantir la reproductibilité."
 
 ---
 
-## DIAPO 8 : Tests unitaires (1:30)
-**Titre :** Qualité du code : tests automatisés
+## DIAPO 10 : Tableau Comparatif Final (2:00)
+
+**Titre :** Synthèse des performances
 
 **Contenu :**
-**Tests de l'API (pytest) :**
-- 15 tests unitaires
-- Coverage : 87% du code
-- Tests de :
-  - Endpoints (`/predict`, `/health`)
-  - Validation des entrées
-  - Gestion d'erreurs
-  - Prédictions positives/négatives
 
-**Exemple de test :**
-```python
-def test_predict_positive_sentiment():
-    response = client.post("/predict", json={
-        "text": "I love this airline!"
-    })
-    assert response.status_code == 200
-    assert response.json()["sentiment"] == "Positif"
-```
+| Critère | Régression Log. | BiLSTM + W2V | BERT |
+|---------|-----------------|--------------|------|
+| **Accuracy** | 78.03% | 77.51% | 77.82% |
+| **F1-Score** | 78.10% | 77.77% | 77.07% |
+| **ROC-AUC** | 86.08% | 85.85% | **86.22%** |
+| **Temps entraînement** | **12 sec** | ~30 min | ~5h |
+| **Taille modèle** | **< 10 MB** | ~50 MB | ~500 MB |
+| **Interprétabilité** | **Excellente** | Faible | Faible |
+| **Complexité déploiement** | **Facile** | Moyenne | Difficile |
 
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Exécution des tests pytest (terminal avec résultats verts)
-- Snippet de code de test
+**Observations clés :**
+- Performances très proches (< 1% de différence)
+- La régression logistique reste compétitive !
+- BERT nécessite beaucoup plus de ressources pour un gain marginal
+- Le meilleur ROC-AUC est obtenu par BERT (86.22%)
 
 **À dire :**
-> "15 tests unitaires valident automatiquement le comportement de l'API. Ils couvrent 87% du code et testent les cas nominaux comme les cas d'erreur. Ces tests s'exécutent automatiquement à chaque modification du code."
+> "Les trois approches atteignent des performances très similaires, autour de 77-78% d'accuracy. La régression logistique offre le meilleur rapport performance/coût avec un entraînement en 12 secondes et une excellente interprétabilité."
 
 ---
 
-## DIAPO 9 : Pipeline de déploiement continu (2:00)
-**Titre :** CI/CD : Déploiement automatique sur Heroku
+## DIAPO 11 : Choix du Modèle pour Production (1:00)
+
+**Titre :** Recommandation pour Air Paradis
 
 **Contenu :**
-**Pipeline automatisé :**
-1. Push sur GitHub (branche `main`)
-2. Tests automatiques (pytest)
-3. Build de l'image Docker
-4. Déploiement sur Heroku
-5. Health check automatique
 
-**Avantages :**
-- Zero-downtime deployment
-- Déploiement en < 5 minutes (vs 2h manuelles)
-- Rollback en un clic
-- Scalabilité automatique
+**Modèle recommandé : Régression Logistique TF-IDF**
 
-**API en production :**
-- URL : https://openclassrooms-projet7-xxxx.herokuapp.com
-- Endpoints : `/predict`, `/predict/batch`, `/health`
-- Format JSON
+**Justification :**
+1. **Performance équivalente** : 78% accuracy (meilleur score)
+2. **Rapidité** : Entraînement en 12 secondes, inférence < 10ms
+3. **Interprétabilité** : On peut expliquer pourquoi un tweet est classé
+4. **Facilité de déploiement** : Fichier < 10 MB, pas de GPU requis
+5. **Maintenance simple** : Ré-entraînement rapide avec nouvelles données
 
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Dashboard Heroku avec déploiements récents
-- Schéma du pipeline CI/CD (Git → Tests → Build → Deploy)
+**Alternative selon le contexte :**
+- Si **précision maximale** requise → BERT (ROC-AUC 86.22%)
+- Si **temps réel** et **gros volume** → Régression Logistique
+- Si **ressources GPU disponibles** → BiLSTM ou BERT
 
 **À dire :**
-> "Le déploiement est entièrement automatisé. Chaque push sur la branche main déclenche les tests, puis si tout est vert, le déploiement sur Heroku. Cela réduit le temps de mise en production de 2 heures à 5 minutes et élimine les erreurs manuelles."
+> "Je recommande la régression logistique pour la production. Avec 78% d'accuracy et un temps d'inférence inférieur à 10ms, c'est le meilleur choix pour traiter de gros volumes en temps réel. Les modèles deep learning sont gardés en réserve pour des cas nécessitant une précision maximale."
 
 ---
 
-## DIAPO 10 : Architecture de l'API (1:00)
-**Titre :** API FastAPI : architecture et endpoints
+## DIAPO 12 : Limitations et Perspectives (1:00)
+
+**Titre :** Limites et améliorations futures
 
 **Contenu :**
-**Stack technique :**
-- FastAPI (framework Python moderne)
-- Pydantic pour validation des données
-- Uvicorn comme serveur ASGI
-- Docker pour conteneurisation
 
-**Endpoints disponibles :**
-- `POST /predict` - Prédiction tweet unique
-- `POST /predict/batch` - Prédiction multiple
-- `GET /health` - État de l'API et du modèle
-
-**Documentation auto-générée :**
-- Swagger UI : `/docs`
-- ReDoc : `/redoc`
-
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Interface Swagger de l'API (/docs)
-
-**À dire :**
-> "L'API est développée avec FastAPI, un framework moderne et performant. Elle expose trois endpoints principaux et génère automatiquement sa documentation interactive. Cette documentation permet de tester l'API directement depuis le navigateur."
-
----
-
-## DIAPO 11 : Interface Streamlit (1:30)
-**Titre :** Interface utilisateur avec feedback
-
-**Contenu :**
-**Fonctionnalités :**
-- Analyse de sentiment en temps réel
-- Upload de CSV pour analyse batch
-- **Validation utilisateur** : boutons "Correct" / "Incorrect"
-- Envoi automatique des feedbacks à PostHog
-- Visualisations (graphiques, statistiques)
-
-**Interface de validation :**
-```
-Prédiction : Positif (confiance : 82%)
-
-[✅ Prédiction correcte]  [❌ Prédiction incorrecte]
-
-Si incorrect → [😊 En réalité POSITIF] [😞 En réalité NÉGATIF]
-```
-
-**Déployée sur Streamlit Cloud :**
-- URL : https://airparadis-sentiment.streamlit.app
-
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Interface Streamlit avec prédiction + boutons de validation
-- **CAPTURE OBLIGATOIRE :** Graphiques de l'interface (répartition sentiments)
-
-**À dire :**
-> "J'ai développé une interface Streamlit permettant de tester l'API de manière interactive. L'utilisateur peut valider ou corriger les prédictions. Ces feedbacks sont automatiquement envoyés à PostHog pour améliorer le modèle dans le temps."
-
----
-
-## DIAPO 12 : Monitoring avec PostHog (2:00)
-**Titre :** Suivi de la performance en production
-
-**Contenu :**
-**Événements trackés :**
-1. **Prédictions effectuées**
-   - Volume (10 000+ tweets/jour)
-   - Distribution positive/négative
-   - Confiance moyenne
-
-2. **Feedbacks utilisateurs**
-   - Prédictions incorrectes
-   - Sentiment prédit vs réel
-   - Patterns d'erreurs
-
-3. **Erreurs techniques**
-   - Timeout API, erreurs 500
-   - Temps de réponse (p95)
-
-**Alertes configurées :**
-| Alerte | Condition | Action |
-|--------|-----------|--------|
-| Accuracy < 70% | Sur 100 prédictions | Email + Slack |
-| Taux d'erreur > 5% | Sur 1h | PagerDuty |
-| Latence > 2s | p95 sur 15min | Investigation |
-
-**Visuels :**
-- **CAPTURE OBLIGATOIRE :** Dashboard PostHog avec événements et métriques
-- **CAPTURE OBLIGATOIRE :** Configuration d'une alerte (email/SMS)
-
-**À dire :**
-> "PostHog permet de suivre en temps réel les performances du modèle en production. J'ai configuré des alertes qui m'avertissent par email ou SMS si l'accuracy chute en dessous de 70% ou si le taux d'erreur dépasse 5%. Cela garantit une intervention rapide en cas de problème."
-
----
-
-## DIAPO 13 : Stratégie d'amélioration continue (1:30)
-**Titre :** Amélioration continue : ré-entraînement et A/B testing
-
-**Contenu :**
-**Déclencheurs de ré-entraînement :**
-1. **Automatique** : Pipeline mensuel (1er de chaque mois)
-2. **Manuel** : Accuracy < 70% ou data drift détecté
-
-**Processus :**
-```
-Feedbacks utilisateurs
-    ↓
-Nouvelles données annotées
-    ↓
-Ré-entraînement + tracking MLflow
-    ↓
-A/B testing (shadow mode)
-    ↓
-Déploiement progressif (10% → 50% → 100%)
-    ↓
-Monitoring renforcé 7 jours
-```
-
-**Sources de données annotées :**
-- Feedbacks utilisateurs (~50-100/jour)
-- Active learning (tweets de faible confiance)
-- Annotation externe (budget 500€/mois)
-
-**Visuels :**
-- Schéma du cycle d'amélioration continue
-- Graphique évolution accuracy dans le temps (simulé)
-
-**À dire :**
-> "Le modèle s'améliore continuellement grâce aux feedbacks utilisateurs. Un pipeline automatique ré-entraîne le modèle mensuellement avec les nouvelles données. Chaque nouveau modèle est validé en A/B testing avant déploiement progressif pour garantir une amélioration réelle."
-
----
-
-## DIAPO 14 : Résultats et ROI (1:30)
-**Titre :** Impact métier et retour sur investissement
-
-**Contenu :**
-**Performances du système :**
-- ✅ 76.5% d'accuracy en production (modèle LSTM)
-- ✅ < 500ms de temps de réponse (p95)
-- ✅ 99.8% d'uptime sur 30 jours
-- ✅ 10 000+ tweets analysés/jour
-
-**ROI Métier :**
-| Métrique | Avant | Après | Gain |
-|----------|-------|-------|------|
-| Volume traité | 50 tweets/jour | 10 000+/jour | **200x** |
-| Temps de réponse | 24-48h | < 1s | **Temps réel** |
-| Coût mensuel | 2 ETP (~8000€) | 150€ infra | **~95%** |
-
-**Impact client :**
-- Détection bad buzz : < 1h (vs 24h)
-- Taux de réponse : +300%
-- Satisfaction client : +15%
-
-**Visuels :**
-- Graphiques de performance (accuracy, latence)
-- Tableau ROI avant/après
-
-**À dire :**
-> "Le système traite maintenant plus de 10 000 tweets par jour avec un temps de réponse inférieur à 500 millisecondes. Le ROI est impressionnant : une réduction de 95% des coûts d'analyse et une détection des bad buzz en moins d'une heure contre 24h auparavant."
-
----
-
-## DIAPO 15 : Démonstration live (2:00)
-**Titre :** Démonstration en direct
-
-**Contenu :**
-**Démo 1 : API via Swagger UI**
-1. Ouvrir https://votre-api.herokuapp.com/docs
-2. Tester `/predict` avec tweet positif : "Amazing flight! Great service!"
-3. Montrer la réponse JSON avec sentiment et confiance
-
-**Démo 2 : Interface Streamlit**
-1. Ouvrir https://airparadis-sentiment.streamlit.app
-2. Saisir un tweet négatif : "Terrible delay, worst airline ever"
-3. Montrer la prédiction
-4. Cliquer sur "Prédiction incorrecte" (si c'est une démo)
-5. Montrer l'envoi du feedback à PostHog
-
-**Tweets à préparer pour démo :**
-- Positif : "Best airline ever! Smooth flight and friendly crew"
-- Négatif : "Lost my luggage, horrible customer service"
-- Ambiguë : "The flight was okay, nothing special"
-
-**Note :** Avoir les URLs ouvertes en onglets avant la présentation
-
-**À dire :**
-> "Je vais maintenant vous montrer le système en action. D'abord via l'API directement, puis via l'interface Streamlit. Vous verrez la rapidité de réponse et la facilité d'utilisation."
-
-**IMPORTANT :** Tester les URLs avant la soutenance !
-
----
-
-## DIAPO 16 : Limitations et perspectives (1:00)
-**Titre :** Limitations et améliorations futures
-
-**Contenu :**
 **Limitations actuelles :**
-- ⚠️ Sarcasme et ironie difficiles à détecter
-- ⚠️ Uniquement tweets en anglais
-- ⚠️ Contexte externe non pris en compte
-- ⚠️ Biais potentiels dans données d'entraînement
+- Sarcasme et ironie difficiles à détecter
+- Dataset de 2009 (vocabulaire peut être daté)
+- Uniquement tweets en anglais
+- Classification binaire (pas de neutre)
 
 **Perspectives d'amélioration :**
-1. **Multimodal** : analyse texte + images/vidéos
-2. **Multilingue** : support français, espagnol...
-3. **Fine-grained** : émotions multiples (joie, colère, surprise...)
-4. **Aspect-based** : sentiment par aspect (service, nourriture, prix...)
-5. **Temps réel** : stream processing avec Kafka
-6. **Explainabilité** : LIME/SHAP pour comprendre les prédictions
-
-**Visuels :**
-- Icônes pour chaque perspective
-- Timeline potentielle (roadmap)
+1. **Données récentes** : Collecter des tweets Air Paradis actuels
+2. **Multi-classe** : Ajouter sentiment neutre/mixte
+3. **Multilingue** : Support français, espagnol
+4. **Aspects** : Sentiment par sujet (service, prix, confort)
+5. **API de déploiement** : FastAPI + Docker + monitoring
 
 **À dire :**
-> "Le système actuel a des limitations, notamment la détection du sarcasme et le support uniquement de l'anglais. Les perspectives incluent l'analyse multimodale avec les images, le support multilingue, et une analyse plus fine des émotions par aspect."
+> "Le modèle a des limitations, notamment sur le sarcasme et les données datant de 2009. Les prochaines étapes seraient de collecter des données récentes spécifiques à Air Paradis et de déployer une API de production avec monitoring."
 
 ---
 
-## DIAPO 17 : Synthèse des livrables (0:30)
-**Titre :** Livrables du projet
+## DIAPO 13 : Synthèse des Livrables (0:30)
+
+**Titre :** Récapitulatif des livrables
 
 **Contenu :**
-✅ **Code et notebooks**
-- 3 notebooks de comparaison (TF-IDF, LSTM, BERT)
-- API FastAPI déployée sur Heroku
-- Interface Streamlit déployée
-- Repository GitHub complet avec 150+ commits
 
-✅ **Documentation**
-- README avec instructions
-- Article de blog MLOps (1950 mots)
-- Documentation API (Swagger)
+**Notebooks :**
+- 01_exploration_donnees.ipynb - Analyse exploratoire
+- 02_preprocessing.ipynb - Nettoyage NLTK
+- 03_modele_simple_logistique.ipynb - Baseline
+- 04_modele_avance_deep_learning.ipynb - LSTM/CNN
+- 05_modele_bert.ipynb - Transfer learning
 
-✅ **MLOps**
-- MLflow : 50+ runs trackées, Model Registry
-- Tests unitaires (pytest, 87% coverage)
-- CI/CD automatisé (Heroku)
-- Monitoring production (PostHog)
-
-✅ **Présentation**
-- Support PowerPoint avec captures d'écran
-- Démonstration en direct
+**Critères d'évaluation couverts :**
+- 2 prétraitements comparés (Lemma vs Stem)
+- 2 word embeddings comparés (Word2Vec vs GloVe)
+- 2+ architectures deep learning (Bi-LSTM, CNN)
+- Au moins 1 modèle LSTM
+- Tracking MLflow complet
 
 **À dire :**
-> "Tous les livrables demandés sont présents : les notebooks de comparaison, l'API déployée, l'interface Streamlit, la documentation complète, et les preuves du pipeline MLOps avec MLflow, tests automatiques et monitoring."
+> "Tous les livrables sont présents : 5 notebooks couvrant l'ensemble du pipeline, avec les comparaisons requises et le tracking MLflow."
 
 ---
 
-## DIAPO 18 : Conclusion (1:00)
-**Titre :** Conclusion : une démarche MLOps industrielle
+## DIAPO 14 : Conclusion (1:00)
+
+**Titre :** Bilan du projet
 
 **Contenu :**
-**Résumé des points clés :**
-1. ✅ **Méthodologie rigoureuse** : 3 approches comparées, choix justifié
-2. ✅ **MLOps complet** : tracking, versioning, tests, CI/CD, monitoring
-3. ✅ **Production fiable** : API performante, monitoring continu
-4. ✅ **Amélioration continue** : feedbacks utilisateurs, ré-entraînement automatique
-5. ✅ **ROI démontré** : réduction 95% des coûts, temps réel
 
-**Messages à retenir :**
-- Le MLOps n'est pas optionnel pour industrialiser le ML
-- Le choix du modèle doit intégrer performance ET coûts opérationnels
-- Le monitoring en production est crucial pour la pérennité
+**Résumé :**
+1. Dataset Sentiment140 : 1.6M tweets, équilibré
+2. Prétraitement NLTK rigoureux (tokenisation, lemmatisation, stemming)
+3. 3 approches comparées : Classique, Deep Learning, Transformers
+4. Performances similaires (~77-78% accuracy)
+5. Régression logistique recommandée pour production
 
-**Citation de clôture :**
-> "Un modèle ML n'est pas un projet fini, c'est un système vivant qui nécessite suivi et amélioration continue."
+**Apprentissages clés :**
+- Les modèles simples restent compétitifs face au deep learning
+- Le prétraitement est crucial pour les performances
+- MLflow facilite grandement le suivi des expérimentations
+- Le choix du modèle dépend du contexte (coût, volume, interprétabilité)
+
+**Message final :**
+> "La complexité d'un modèle ne garantit pas de meilleures performances. Le bon modèle est celui qui répond au besoin métier avec le meilleur rapport performance/coût."
 
 **À dire :**
-> "En conclusion, ce projet démontre une approche MLOps industrielle complète. Au-delà des performances techniques du modèle LSTM, c'est toute l'infrastructure de tracking, déploiement et monitoring qui garantit la fiabilité et la pérennité du système en production."
+> "En conclusion, ce projet montre qu'un modèle classique bien conçu peut rivaliser avec le deep learning. Le choix final doit intégrer les contraintes métier : volume, latence, interprétabilité et coûts d'infrastructure."
 
 ---
 
-## DIAPO 19 : Questions / Contact (jusqu'à 20 min)
-**Titre :** Merci pour votre attention - Questions ?
+## DIAPO 15 : Questions (2:00+)
+
+**Titre :** Merci - Questions ?
 
 **Contenu :**
-**Liens utiles :**
-- 🔗 API : https://openclassrooms-projet7-xxxx.herokuapp.com
-- 🔗 Interface : https://airparadis-sentiment.streamlit.app
-- 🔗 GitHub : https://github.com/username/openclassrooms-projet7
-- 📧 Email : votre.email@example.com
-- 💼 LinkedIn : linkedin.com/in/votre-profil
-
-**QR Code** vers le repository GitHub
-
-**À dire :**
-> "Merci pour votre attention. Je suis disponible pour répondre à vos questions sur la méthodologie, les choix techniques ou l'implémentation MLOps."
+- Liens vers le repository GitHub
+- Contact
 
 ---
 
-## Questions fréquentes à préparer
+## Questions Fréquentes à Préparer
 
-**Q1 : Pourquoi avoir choisi LSTM plutôt que BERT pour la production ?**
-R : Bien que BERT soit 1.3% plus performant, le modèle LSTM offre un meilleur rapport performance/coût. Le temps d'inférence est 4x plus rapide (50ms vs 200ms), la taille du modèle est 5x plus petite, et l'infrastructure nécessaire est beaucoup moins coûteuse (CPU suffisant vs GPU pour BERT). Le gain marginal de performance ne justifie pas les coûts opérationnels 3-4x supérieurs.
+**Q1 : Pourquoi la régression logistique bat les modèles deep learning ?**
+> Le dataset est relativement simple (textes courts, classification binaire). TF-IDF capture efficacement les mots-clés discriminants. Les modèles complexes n'apportent pas de gain significatif sur ce type de tâche.
 
-**Q2 : Comment gérez-vous le data drift ?**
-R : J'utilise la distance de Kolmogorov-Smirnov pour comparer la distribution des tweets en production avec les données d'entraînement. Si KS > 0.3, une alerte est déclenchée et un ré-entraînement est lancé avec les nouvelles données annotées.
+**Q2 : Pourquoi Word2Vec bat GloVe ?**
+> Word2Vec est entraîné directement sur nos tweets, donc les embeddings sont adaptés au vocabulaire Twitter (abréviations, style informel). GloVe est pré-entraîné sur des textes plus formels.
 
-**Q3 : Combien de données sont nécessaires pour ré-entraîner le modèle ?**
-R : Le pipeline mensuel collecte environ 1500-3000 nouveaux tweets annotés par mois (50-100 feedbacks utilisateurs/jour). Ces données sont fusionnées avec l'historique en appliquant une pondération temporelle qui favorise les données récentes.
+**Q3 : Comment gérer le sarcasme ?**
+> C'est un problème ouvert en NLP. Des pistes : modèles spécialisés sur le sarcasme, analyse du contexte (historique utilisateur), indices multimodaux (émojis, ponctuation excessive).
 
-**Q4 : Comment assurez-vous la qualité des annotations utilisateurs ?**
-R : Les feedbacks utilisateurs sont croisés avec un échantillon annoté manuellement par l'équipe support (active learning). Pour les annotations externes, nous utilisons 3 annotateurs indépendants et calculons le Kappa de Cohen (> 0.8 requis) pour valider la qualité.
+**Q4 : Pourquoi BERT ne performe pas mieux ?**
+> Plusieurs raisons : dataset de 2009 avec vocabulaire différent des données de pré-entraînement de BERT, tweets courts limitant l'avantage du contexte bidirectionnel, et possible sous-entraînement (100k tweets vs 1.6M pour les autres).
 
-**Q5 : Quel est le coût mensuel du système en production ?**
-R : Environ 150€/mois incluant :
-- Heroku Hobby Dyno : 7€/mois
-- PostHog (plan gratuit) : 0€
-- Stockage modèles (S3) : ~5€/mois
-- Annotations externes : ~500€/mois (optionnel)
-- Total infrastructure : ~150€/mois (vs 8000€/mois pour 2 ETP avant automatisation)
+**Q5 : Comment améliorer les performances ?**
+> - Données plus récentes et spécifiques à Air Paradis
+> - Augmentation de données (paraphrase, back-translation)
+> - Ensemble de modèles (voting)
+> - Fine-tuning BERT sur plus de données
 
-**Q6 : Combien de temps pour mettre à jour le modèle en production ?**
-R : Avec le pipeline CI/CD automatisé, de la fin de l'entraînement au déploiement complet : environ 10 minutes (build Docker + déploiement Heroku + health checks). En ajoutant l'A/B testing et le déploiement progressif : 2-3 jours pour un déploiement sécurisé.
-
-**Q7 : Comment gérez-vous le sarcasme et l'ironie ?**
-R : C'est une limitation reconnue. Actuellement, les tweets sarcastiques sont souvent mal classés même par BERT. Les perspectives incluent l'utilisation de modèles spécialisés (ex: modèles entraînés sur datasets de sarcasme) et l'analyse multimodale (émojis, ponctuation excessive) pour détecter ces cas.
-
-**Q8 : Pourquoi PostHog plutôt qu'Azure Application Insights ?**
-R : PostHog offre plus de flexibilité pour l'analyse comportementale et l'A/B testing. De plus, le plan gratuit est généreux pour notre volume. Azure Application Insights reste une excellente alternative si l'entreprise utilise déjà l'écosystème Azure.
+**Q6 : Quel est le temps d'inférence en production ?**
+> Régression logistique : < 10ms par tweet. BERT : ~200ms par tweet. Pour 10,000 tweets/jour, la régression traite tout en < 2 minutes, BERT en ~30 minutes.
 
 ---
 
-## Checklist avant la présentation
+## Checklist Avant Présentation
 
 ### Technique
-- [ ] Tester les URLs de l'API et de Streamlit
-- [ ] Vérifier que l'API répond (health check)
-- [ ] Préparer les tweets pour la démo
-- [ ] Ouvrir les URLs en onglets (API Swagger, Streamlit, GitHub)
-- [ ] Tester la connexion internet de secours (4G téléphone)
-
-### Captures d'écran obligatoires
-- [ ] MLflow UI - Liste des runs
-- [ ] MLflow UI - Comparaison graphique (parallel coordinates)
-- [ ] MLflow Model Registry - Versions et stages
-- [ ] GitHub - Historique des commits avec graph
-- [ ] GitHub - Arborescence du repository
-- [ ] pytest - Exécution des tests (terminal)
-- [ ] Heroku - Dashboard avec déploiements
-- [ ] Swagger UI - Documentation API
-- [ ] Streamlit - Interface avec prédiction
-- [ ] Streamlit - Boutons de validation utilisateur
-- [ ] PostHog - Dashboard avec événements
-- [ ] PostHog - Configuration d'alerte
+- [ ] Notebooks exécutés avec outputs visibles
+- [ ] Captures d'écran MLflow préparées
+- [ ] Métriques vérifiées et cohérentes
 
 ### Contenu
-- [ ] Remplacer "xxxx" par vos vraies URLs
-- [ ] Ajouter vos coordonnées (email, LinkedIn)
-- [ ] Générer QR code vers GitHub
-- [ ] Vérifier orthographe et grammaire
-- [ ] Numéroter les slides (X/19)
-- [ ] Ajouter logo OpenClassrooms
+- [ ] Relire le plan
+- [ ] Préparer les slides PowerPoint
+- [ ] Vérifier orthographe
 
 ### Timing
-- [ ] Répéter la présentation au moins 2 fois
-- [ ] Chronométrer chaque section
-- [ ] Identifier les sections à raccourcir si retard
-- [ ] Préparer version courte (15min) si besoin
-
-### Présentation
-- [ ] Mode présentateur activé (notes sous les slides)
-- [ ] Désactiver notifications (mode avion sauf WiFi)
-- [ ] Fermer applications inutiles
-- [ ] Augmenter taille police du terminal pour démo
-- [ ] Préparer bouteille d'eau
+- [ ] Répéter la présentation (chronométrer)
+- [ ] Identifier sections à raccourcir si retard
+- [ ] Préparer version 15 min si besoin
 
 ---
 
-## Conseils pour la présentation
+## Récapitulatif Timing
 
-### Communication
-1. **Parler lentement et clairement** - Vous connaissez le sujet, pas le jury
-2. **Regarder le jury** - Pas l'écran (utiliser mode présentateur)
-3. **Respirer** - Pause 2-3 secondes entre les slides
-4. **Sourire** - Montrer votre enthousiasme pour le projet
-5. **Gérer le stress** - Si trou de mémoire, consulter les notes
-
-### Posture d'expert
-1. **Assumer vos choix** - Expliquer le pourquoi (LSTM vs BERT)
-2. **Reconnaître les limites** - Honnêteté appréciée par le jury
-3. **Montrer votre compréhension** - Pas de récitation, expliquer avec vos mots
-4. **Être concret** - Chiffres précis (76.5%, 150€/mois, 10 000 tweets/jour)
-
-### Gestion du temps
-- **Afficher chrono visible** (téléphone ou montre)
-- **Checkpoint mi-parcours** (10min → devriez être à DIAPO 9-10)
-- **Si retard** : réduire DIAPO 7, 11, 16 (moins critiques)
-- **Si avance** : développer DIAPO 12-13 (monitoring et amélioration continue)
-
-### En cas de problème technique
-- **API ne répond pas** : Montrer capture d'écran de backup
-- **Streamlit down** : Idem, capture d'écran préparée
-- **Pas de connexion** : Basculer sur version offline avec vidéo enregistrée
+| Temps | Slide | Section |
+|-------|-------|---------|
+| 2 min | 2 | Contexte terminé |
+| 5 min | 4 | Données terminées |
+| 11 min | 7 | Modèles terminés |
+| 15 min | 9 | MLOps terminé |
+| 18 min | 12 | Résultats terminés |
+| 20 min | 15 | Questions |
 
 ---
 
-## Récapitulatif timing
-
-| Temps écoulé | Slide attendue | Section |
-|--------------|----------------|---------|
-| 2 min | DIAPO 2 | Contexte terminé |
-| 6 min | DIAPO 5 | Méthodologie terminée |
-| 11 min | DIAPO 9 | MLOps terminé |
-| 15 min | DIAPO 13 | Production terminée |
-| 18 min | DIAPO 16 | Résultats et démo terminés |
-| 20 min | DIAPO 19 | Questions |
-
-**Objectif** : Terminer la présentation à 18 minutes pour laisser 2 minutes de questions
-
----
-
-Bon courage pour votre soutenance ! 🚀
+Bonne soutenance !
