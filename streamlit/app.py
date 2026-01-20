@@ -305,167 +305,175 @@ if mode == "Tweet unique":
             if error:
                 st.error(f"❌ {error}")
             else:
-                # Affichage du résultat
-                st.success("✅ Analyse terminée")
+                # Stocker le résultat dans session_state pour persistance
+                st.session_state.last_result = result
+                st.session_state.last_tweet = tweet_text
+                st.session_state.show_correction = False
 
-                # Sentiment principal
-                sentiment_label = result["sentiment_label"]
-                confidence = result["confidence"]
+    # Afficher le résultat s'il existe dans session_state
+    if 'last_result' in st.session_state and st.session_state.last_result:
+        result = st.session_state.last_result
+        tweet_text = st.session_state.last_tweet
 
-                if sentiment_label == "Positif":
-                    st.markdown(
-                        f'<div class="positive-sentiment">😊 SENTIMENT POSITIF<br>'
-                        f'Confiance: {confidence:.1%}</div>',
-                        unsafe_allow_html=True
+        # Affichage du résultat
+        st.success("✅ Analyse terminée")
+
+        # Sentiment principal
+        sentiment_label = result["sentiment_label"]
+        confidence = result["confidence"]
+
+        if sentiment_label == "Positif":
+            st.markdown(
+                f'<div class="positive-sentiment">😊 SENTIMENT POSITIF<br>'
+                f'Confiance: {confidence:.1%}</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'<div class="negative-sentiment">😞 SENTIMENT NÉGATIF<br>'
+                f'Confiance: {confidence:.1%}</div>',
+                unsafe_allow_html=True
+            )
+
+        st.divider()
+
+        # Détails
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Sentiment",
+                sentiment_label,
+                delta=f"{confidence:.1%}" if sentiment_label == "Positif" else f"-{confidence:.1%}"
+            )
+
+        with col2:
+            st.metric(
+                "Confiance",
+                f"{confidence:.1%}"
+            )
+
+        with col3:
+            st.metric(
+                "Modèle",
+                result["model_type"].upper()
+            )
+
+        # Graphique de probabilités
+        st.subheader("📊 Distribution des probabilités")
+
+        probabilities = result["probabilities"]
+        fig = go.Figure(data=[
+            go.Bar(
+                x=["Négatif", "Positif"],
+                y=[probabilities["negative"], probabilities["positive"]],
+                marker_color=["#F44336", "#4CAF50"],
+                text=[f"{probabilities['negative']:.1%}", f"{probabilities['positive']:.1%}"],
+                textposition="auto"
+            )
+        ])
+
+        fig.update_layout(
+            title="Probabilités de classification",
+            xaxis_title="Sentiment",
+            yaxis_title="Probabilité",
+            yaxis_range=[0, 1],
+            height=400
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # JSON brut
+        with st.expander("🔍 Voir la réponse JSON complète"):
+            st.json(result)
+
+        # Validation utilisateur
+        st.divider()
+        st.subheader("✅ Validation de la prédiction")
+
+        st.info("💡 Votre feedback nous aide à améliorer le modèle en continu")
+
+        col1, col2, col3 = st.columns([2, 2, 1])
+
+        with col1:
+            if st.button("✅ Prédiction correcte", type="secondary", use_container_width=True, key="correct"):
+                st.success("Merci pour votre validation ! 😊")
+                logger.info(f"Validation positive pour: {tweet_text[:50]}...")
+
+        with col2:
+            if st.button("❌ Prédiction incorrecte", type="secondary", use_container_width=True, key="incorrect"):
+                # Demander le vrai sentiment
+                st.session_state.show_correction = True
+
+        # Si l'utilisateur a cliqué "Incorrect", afficher les options de correction
+        if st.session_state.get('show_correction', False):
+            st.warning("⚠️ Quelle était la bonne réponse ?")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("😊 En réalité, c'était POSITIF", use_container_width=True, key="correct_positive"):
+                    # Envoyer la trace à PostHog
+                    sent = send_feedback_to_analytics(
+                        text=tweet_text,
+                        predicted_sentiment=sentiment_label,
+                        actual_sentiment="Positif",
+                        confidence=confidence,
+                        model_type=result["model_type"]
                     )
-                else:
-                    st.markdown(
-                        f'<div class="negative-sentiment">😞 SENTIMENT NÉGATIF<br>'
-                        f'Confiance: {confidence:.1%}</div>',
-                        unsafe_allow_html=True
+
+                    if USE_POSTHOG and sent:
+                        st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
+                    else:
+                        st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
+
+                    st.session_state.show_correction = False
+
+            with col2:
+                if st.button("😞 En réalité, c'était NÉGATIF", use_container_width=True, key="correct_negative"):
+                    # Envoyer la trace à PostHog
+                    sent = send_feedback_to_analytics(
+                        text=tweet_text,
+                        predicted_sentiment=sentiment_label,
+                        actual_sentiment="Négatif",
+                        confidence=confidence,
+                        model_type=result["model_type"]
                     )
 
-                st.divider()
+                    if USE_POSTHOG and sent:
+                        st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
+                    else:
+                        st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
 
-                # Détails
-                col1, col2, col3 = st.columns(3)
+                    st.session_state.show_correction = False
 
-                with col1:
-                    st.metric(
-                        "Sentiment",
-                        sentiment_label,
-                        delta=f"{confidence:.1%}" if sentiment_label == "Positif" else f"-{confidence:.1%}"
-                    )
+        # Info sur le feedback
+        with st.expander("ℹ️ Comment fonctionne le feedback ?"):
+            st.markdown(f"""
+**Système de feedback et amélioration continue**
 
-                with col2:
-                    st.metric(
-                        "Confiance",
-                        f"{confidence:.1%}"
-                    )
+Lorsque vous indiquez qu'une prédiction est incorrecte :
 
-                with col3:
-                    st.metric(
-                        "Modèle",
-                        result["model_type"].upper()
-                    )
+1. 📊 **Trace envoyée à PostHog Analytics** avec :
+   - Le texte du tweet
+   - La prédiction du modèle
+   - Le sentiment réel selon vous
+   - Le niveau de confiance
+   - L'horodatage
 
-                # Graphique de probabilités
-                st.subheader("📊 Distribution des probabilités")
+2. 🔍 **Analyse régulière** par l'équipe Data Science :
+   - Identification des patterns d'erreurs
+   - Détection des nouveaux mots/expressions
+   - Évaluation de la dérive du modèle
 
-                probabilities = result["probabilities"]
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=["Négatif", "Positif"],
-                        y=[probabilities["negative"], probabilities["positive"]],
-                        marker_color=["#F44336", "#4CAF50"],
-                        text=[f"{probabilities['negative']:.1%}", f"{probabilities['positive']:.1%}"],
-                        textposition="auto"
-                    )
-                ])
+3. 🔄 **Ré-entraînement du modèle** :
+   - Avec les corrections utilisateurs
+   - Amélioration continue de la précision
+   - Tests et validation avant déploiement
 
-                fig.update_layout(
-                    title="Probabilités de classification",
-                    xaxis_title="Sentiment",
-                    yaxis_title="Probabilité",
-                    yaxis_range=[0, 1],
-                    height=400
-                )
-
-                st.plotly_chart(fig, use_container_width=True)
-
-                # JSON brut
-                with st.expander("🔍 Voir la réponse JSON complète"):
-                    st.json(result)
-
-                # Validation utilisateur
-                st.divider()
-                st.subheader("✅ Validation de la prédiction")
-
-                st.info("💡 Votre feedback nous aide à améliorer le modèle en continu")
-
-                col1, col2, col3 = st.columns([2, 2, 1])
-
-                with col1:
-                    if st.button("✅ Prédiction correcte", type="secondary", use_container_width=True, key="correct"):
-                        st.success("Merci pour votre validation ! 😊")
-                        logger.info(f"Validation positive pour: {tweet_text[:50]}...")
-
-                with col2:
-                    if st.button("❌ Prédiction incorrecte", type="secondary", use_container_width=True, key="incorrect"):
-                        # Demander le vrai sentiment
-                        st.session_state.show_correction = True
-
-                # Si l'utilisateur a cliqué "Incorrect", afficher les options de correction
-                if st.session_state.get('show_correction', False):
-                    st.warning("⚠️ Quelle était la bonne réponse ?")
-
-                    col1, col2 = st.columns(2)
-
-                    with col1:
-                        if st.button("😊 En réalité, c'était POSITIF", use_container_width=True, key="correct_positive"):
-                            # Envoyer la trace à Application Insights
-                            sent = send_feedback_to_analytics(
-                                text=tweet_text,
-                                predicted_sentiment=sentiment_label,
-                                actual_sentiment="Positif",
-                                confidence=confidence,
-                                model_type=result["model_type"]
-                            )
-
-                            if USE_POSTHOG and sent:
-                                st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
-                            else:
-                                st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
-
-                            st.session_state.show_correction = False
-
-                    with col2:
-                        if st.button("😞 En réalité, c'était NÉGATIF", use_container_width=True, key="correct_negative"):
-                            # Envoyer la trace à Application Insights
-                            sent = send_feedback_to_analytics(
-                                text=tweet_text,
-                                predicted_sentiment=sentiment_label,
-                                actual_sentiment="Négatif",
-                                confidence=confidence,
-                                model_type=result["model_type"]
-                            )
-
-                            if USE_POSTHOG and sent:
-                                st.success("✅ Merci ! Trace envoyée à PostHog Analytics pour amélioration du modèle")
-                            else:
-                                st.success("✅ Merci ! Feedback enregistré (mode local - PostHog non configuré)")
-
-                            st.session_state.show_correction = False
-
-                # Info sur Application Insights
-                with st.expander("ℹ️ Comment fonctionne le feedback ?"):
-                    st.markdown("""
-                    **Système de feedback et amélioration continue**
-
-                    Lorsque vous indiquez qu'une prédiction est incorrecte :
-
-                    1. 📊 **Trace envoyée à PostHog Analytics** avec :
-                       - Le texte du tweet
-                       - La prédiction du modèle
-                       - Le sentiment réel selon vous
-                       - Le niveau de confiance
-                       - L'horodatage
-
-                    2. 🔍 **Analyse régulière** par l'équipe Data Science :
-                       - Identification des patterns d'erreurs
-                       - Détection des nouveaux mots/expressions
-                       - Évaluation de la dérive du modèle
-
-                    3. 🔄 **Ré-entraînement du modèle** :
-                       - Avec les corrections utilisateurs
-                       - Amélioration continue de la précision
-                       - Tests et validation avant déploiement
-
-                    **Configuration actuelle** :
-                    - Application Insights : {'✅ Activé' if USE_POSTHOG else '❌ Non configuré (mode local)'}
-                    - Les traces incorrectes sont marquées avec le niveau `WARNING`
-                    - Accessibles dans le portail Azure pour analyse
-                    """)
+**Configuration actuelle** :
+- PostHog : {'✅ Activé' if USE_POSTHOG else '❌ Non configuré (mode local)'}
+            """)
 
 
 # Mode: Analyse batch
