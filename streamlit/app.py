@@ -403,13 +403,17 @@ if mode == "Tweet unique":
             st.session_state.pending_feedback = None
 
         # Traiter le feedback en attente (après rechargement de page)
+        logger.info(f"pending_feedback={st.session_state.pending_feedback}, feedback_sent={st.session_state.feedback_sent}")
+
         if st.session_state.pending_feedback:
             actual = st.session_state.pending_feedback
+            logger.info(f"Processing pending feedback: {actual}")
             st.session_state.pending_feedback = None
             st.session_state.feedback_sent = True
             st.session_state.show_correction = False
 
             # Envoyer maintenant
+            logger.info("Calling send_feedback_to_analytics...")
             send_feedback_to_analytics(
                 text=tweet_text,
                 predicted_sentiment=sentiment_label,
