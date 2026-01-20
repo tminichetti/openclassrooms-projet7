@@ -209,8 +209,8 @@ def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, conf
         confidence: Niveau de confiance de la prédiction
         model_type: Type de modèle utilisé
     """
-    # Afficher dans Streamlit pour debug
-    st.info("📤 Envoi du feedback à PostHog...")
+    # Debug info
+    logger.info(f"send_feedback_to_analytics called - USE_POSTHOG={USE_POSTHOG}, posthog_client={posthog_client is not None}")
 
     if USE_POSTHOG and posthog_client:
         try:
@@ -219,44 +219,42 @@ def send_feedback_to_analytics(text, predicted_sentiment, actual_sentiment, conf
             if 'user_id' not in st.session_state:
                 st.session_state.user_id = user_id
 
+            event_data = {
+                'feedback_type': 'incorrect_prediction',
+                'text_preview': text[:100],
+                'text_length': len(text),
+                'predicted_sentiment': predicted_sentiment,
+                'actual_sentiment': actual_sentiment,
+                'confidence': confidence,
+                'model_type': model_type,
+                'timestamp': datetime.now().isoformat(),
+                'source': 'streamlit_interface'
+            }
+
+            logger.info(f"Sending event to PostHog: user={user_id}, event=prediction_feedback")
+
             # Envoyer l'événement à PostHog
             posthog_client.capture(
                 distinct_id=user_id,
                 event='prediction_feedback',
-                properties={
-                    'feedback_type': 'incorrect_prediction',
-                    'text_preview': text[:100],
-                    'text_length': len(text),
-                    'predicted_sentiment': predicted_sentiment,
-                    'actual_sentiment': actual_sentiment,
-                    'confidence': confidence,
-                    'model_type': model_type,
-                    'timestamp': datetime.now().isoformat(),
-                    'source': 'streamlit_interface'
-                }
+                properties=event_data
             )
 
             # IMPORTANT: Forcer l'envoi immédiat des événements
             posthog_client.flush()
 
-            st.success(f"✅ Événement envoyé à PostHog (user: {user_id[:20]}...)")
-            logger.info(f"Événement envoyé à PostHog: prédiction incorrecte pour '{text[:50]}...'")
+            st.success(f"✅ Feedback envoyé à PostHog !")
+            logger.info(f"Event sent successfully to PostHog for user {user_id}")
             return True
         except Exception as e:
             st.error(f"❌ Erreur PostHog: {e}")
             logger.error(f"Erreur lors de l'envoi à PostHog: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     else:
-        # Mode debug local : afficher dans Streamlit
-        st.warning(f"⚠️ Mode local - PostHog non configuré")
-        st.code(f"""
-Feedback (non envoyé):
-- Texte: {text[:50]}...
-- Prédit: {predicted_sentiment}
-- Réel: {actual_sentiment}
-- Confiance: {confidence:.2%}
-- Modèle: {model_type}
-        """)
+        # Mode debug local
+        st.warning(f"⚠️ PostHog non configuré (USE_POSTHOG={USE_POSTHOG})")
         return False
 
 
