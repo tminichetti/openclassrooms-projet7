@@ -64,9 +64,11 @@ if USE_POSTHOG:
         from posthog import Posthog
         posthog_client = Posthog(
             project_api_key=POSTHOG_API_KEY,
-            host=POSTHOG_HOST
+            host=POSTHOG_HOST,
+            debug=True,  # Active le mode debug
+            on_error=lambda e, batch: logger.error(f"PostHog error: {e}, batch: {batch}")
         )
-        logger.info(f"PostHog configuré avec succès (key: {POSTHOG_API_KEY[:10]}...)")
+        logger.info(f"PostHog configuré avec succès (key: {POSTHOG_API_KEY[:10]}..., host: {POSTHOG_HOST})")
     except ImportError:
         USE_POSTHOG = False
         logger.warning("posthog non installé. Les événements ne seront pas trackés.")
