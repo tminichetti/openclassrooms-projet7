@@ -26,20 +26,20 @@ Notre approche de référence (baseline) repose sur une méthode classique de tr
 - Temps d'entraînement : quelques secondes
 
 **Résultats :**
-- Accuracy : 74.2%
-- F1-Score : 0.74
-- ROC-AUC : 0.81
+- Accuracy : 78.03%
+- F1-Score : 0.7810
+- ROC-AUC : 0.8608
 
-Cette baseline rapide et efficace sert de point de comparaison pour évaluer l'apport des modèles plus complexes.
+Cette baseline rapide et efficace offre d'excellentes performances et sert de point de comparaison pour évaluer l'apport des modèles plus complexes.
 
 ### 2. Modèle sur mesure avancé : Word2Vec + LSTM
 
 Notre deuxième approche utilise des réseaux de neurones récurrents pour capturer le contexte sémantique :
 
 **Embeddings :**
-- Word2Vec (CBOW) pré-entraîné sur Google News
+- Word2Vec (CBOW) entraîné sur nos données Twitter
 - Vecteurs de 300 dimensions
-- Capture des relations sémantiques entre mots
+- Capture des relations sémantiques spécifiques au vocabulaire des réseaux sociaux
 
 **Architecture du réseau :**
 - Couche Embedding (300 dimensions)
@@ -54,21 +54,21 @@ Notre deuxième approche utilise des réseaux de neurones récurrents pour captu
 - Early stopping avec patience de 3 epochs
 
 **Résultats :**
-- Accuracy : 76.5%
-- F1-Score : 0.76
-- ROC-AUC : 0.84
-- Temps d'entraînement : ~15 minutes
+- Accuracy : 77.51%
+- F1-Score : 0.7777
+- ROC-AUC : 0.8585
+- Temps d'entraînement : ~30 minutes
 
-L'amélioration de 2.3% d'accuracy justifie la complexité supplémentaire pour des cas d'usage critiques.
+Le modèle atteint de bonnes performances mais reste légèrement en-dessous de la baseline logistique.
 
 ### 3. Modèle avancé BERT : Transfer Learning
 
 Notre approche la plus performante exploite un modèle pré-entraîné de type Transformer :
 
 **Modèle de base :**
-- DistilBERT base uncased (modèle léger)
-- 66M de paramètres (vs 110M pour BERT-base)
-- Pré-entraîné sur 16GB de texte anglais
+- BERT base uncased
+- 110M de paramètres
+- Pré-entraîné sur BookCorpus et Wikipedia anglais
 
 **Fine-tuning :**
 - Tokenization avec vocabulaire BERT (30k tokens)
@@ -83,34 +83,35 @@ Notre approche la plus performante exploite un modèle pré-entraîné de type T
 - Validation croisée
 
 **Résultats finaux :**
-- Accuracy : 77.8%
-- F1-Score : 0.77
-- ROC-AUC : 0.86
-- Temps d'entraînement : ~45 minutes
+- Accuracy : 77.82%
+- F1-Score : 0.7707
+- ROC-AUC : 0.8622
+- Temps d'entraînement : ~5 heures sur GPU
 
-BERT offre la meilleure performance grâce à sa compréhension contextuelle bidirectionnelle profonde.
+BERT offre le meilleur ROC-AUC grâce à sa compréhension contextuelle bidirectionnelle profonde, mais ses performances globales sont similaires aux autres approches.
 
 ## Tableau comparatif des approches
 
-| Critère | TF-IDF + LR | Word2Vec + LSTM | DistilBERT |
-|---------|-------------|-----------------|------------|
-| **Accuracy** | 74.2% | 76.5% | **77.8%** |
-| **F1-Score** | 0.74 | 0.76 | **0.77** |
-| **ROC-AUC** | 0.81 | 0.84 | **0.86** |
-| **Temps d'entraînement** | **< 1 min** | ~15 min | ~45 min |
-| **Taille du modèle** | **< 1 MB** | ~50 MB | ~250 MB |
+| Critère | TF-IDF + LR | Word2Vec + BiLSTM | BERT |
+|---------|-------------|-------------------|------|
+| **Accuracy** | **78.03%** | 77.51% | 77.82% |
+| **F1-Score** | **0.7810** | 0.7777 | 0.7707 |
+| **ROC-AUC** | 0.8608 | 0.8585 | **0.8622** |
+| **Temps d'entraînement** | **12 sec** | ~30 min | ~5h |
+| **Taille du modèle** | **< 10 MB** | ~50 MB | ~500 MB |
 | **Temps d'inférence (1 tweet)** | **< 10ms** | ~50ms | ~200ms |
-| **Complexité** | Faible | Moyenne | Élevée |
-| **Interprétabilité** | **Excellente** | Moyenne | Faible |
+| **Complexité** | **Faible** | Moyenne | Élevée |
+| **Interprétabilité** | **Excellente** | Faible | Faible |
 | **Coût infrastructure** | **Minimal** | Moyen | Élevé |
 
-**Choix du modèle en production :** Word2Vec + LSTM
+**Choix du modèle en production :** Régression Logistique TF-IDF
 
-Bien que BERT soit le plus performant (+1.3% accuracy), nous avons choisi le modèle LSTM pour la production en raison de :
-- Meilleur rapport performance/coût (76.5% accuracy, temps d'inférence 4x plus rapide)
-- Taille du modèle 5x plus petite (déploiement plus rapide)
-- Coûts d'infrastructure réduits (CPU suffisant vs GPU pour BERT)
-- Gain de 1.3% ne justifie pas un coût opérationnel 3-4x supérieur
+Contre-intuitivement, le modèle le plus simple s'avère être le plus performant sur ce dataset. Nous avons donc choisi la régression logistique pour la production en raison de :
+- **Meilleure accuracy** (78.03% vs 77.82% pour BERT et 77.51% pour BiLSTM)
+- **Rapidité exceptionnelle** : entraînement en 12 secondes, inférence < 10ms
+- **Interprétabilité** : on peut expliquer chaque prédiction (mots discriminants)
+- **Coûts minimaux** : pas de GPU nécessaire, modèle < 10 MB
+- Les modèles complexes (BiLSTM, BERT) sont gardés en réserve pour des cas d'usage futurs nécessitant une compréhension contextuelle plus fine
 
 ## La démarche MLOps mise en œuvre
 
@@ -130,22 +131,23 @@ Le MLOps (Machine Learning Operations) est l'ensemble des pratiques visant à in
 
 **MLflow** est notre outil central de gestion des expérimentations :
 
-**Métriques trackées :**
+**Exemple de tracking pour le modèle BiLSTM :**
 ```python
 mlflow.log_params({
-    "model_type": "lstm_word2vec",
+    "model_type": "BiLSTM_Word2Vec_Stem",
     "embedding_dim": 300,
     "lstm_units": 128,
     "dropout_rate": 0.5,
     "batch_size": 64,
-    "learning_rate": 0.001
+    "learning_rate": 0.001,
+    "preprocessing": "stemming"
 })
 
 mlflow.log_metrics({
-    "accuracy": 0.765,
-    "f1_score": 0.76,
-    "roc_auc": 0.84,
-    "training_time": 892.5,
+    "test_accuracy": 0.7751,
+    "test_f1_score": 0.7777,
+    "test_roc_auc": 0.8585,
+    "training_time_sec": 1842.3,
     "model_size_mb": 48.3
 })
 ```
@@ -157,12 +159,11 @@ mlflow.log_metrics({
 
 **Interface MLflow UI :**
 
-![MLflow Experiments](screenshots/mlflow_experiments.png)
-
-L'interface nous permet de :
+L'interface web MLflow (accessible sur `http://localhost:5001`) nous permet de :
 - Filtrer les runs par métrique (ex: accuracy > 0.75)
 - Comparer visuellement les courbes d'apprentissage
 - Identifier rapidement les meilleurs modèles
+- Télécharger les artefacts (modèles sauvegardés, graphiques)
 
 ### 2. Stockage centralisé des modèles
 
@@ -248,32 +249,32 @@ def test_predict_negative_sentiment():
 - Tests de endpoints, de validation des entrées, de gestion d'erreurs
 - Intégration dans le pipeline CI/CD
 
-### 5. Déploiement continu sur Heroku
+### 5. Déploiement de l'API FastAPI
 
-**Pipeline de déploiement :**
+**Architecture de déploiement :**
 
-1. **Push sur GitHub** → Déclenche le pipeline
-2. **Tests automatiques** → Validation avec pytest
-3. **Build Docker** → Création de l'image de l'API
-4. **Déploiement Heroku** → Mise à jour automatique
+L'API FastAPI peut être déployée sur différentes plateformes :
+- **Railway** : déploiement simplifié avec détection automatique
+- **Heroku** : plateforme PaaS classique
+- **Docker** : conteneurisation pour portabilité maximale
+- **Local** : développement et tests
 
-**Configuration Heroku :**
-```yaml
-# Procfile
-web: uvicorn api.app:app --host 0.0.0.0 --port $PORT
+**Configuration :**
+```python
+# Lancement avec Uvicorn
+uvicorn api.app:app --host 0.0.0.0 --port $PORT
 ```
 
-**Avantages :**
-- Déploiements automatiques à chaque push sur `main`
-- Zero-downtime deployment
-- Rollback en un clic en cas de problème
-- Scalabilité automatique selon la charge
+**Variables d'environnement :**
+- `MODEL_TYPE` : type de modèle (logistic, lstm, bert)
+- `MODEL_PATH` : chemin vers le modèle sérialisé
+- `PORT` : port d'écoute (défaut 8000)
 
-**API en production :**
-- URL : https://openclassrooms-projet7-xxxx.herokuapp.com
-- Endpoint : `POST /predict`
-- Format : JSON `{"text": "votre tweet"}`
-- Réponse : `{"sentiment": "Positif", "confidence": 0.82}`
+**API endpoints :**
+- `GET /health` : vérification de l'état de santé
+- `POST /predict` : prédiction pour un tweet unique
+- `POST /predict/batch` : prédictions batch (jusqu'à 100 tweets)
+- `GET /models` : liste des modèles disponibles
 
 ### 6. Suivi de la performance en production
 
@@ -308,11 +309,7 @@ Nous utilisons PostHog pour tracker les événements critiques :
    - Erreurs de parsing
    - Modèle inaccessible
 
-**Dashboard PostHog :**
-
-![PostHog Dashboard](screenshots/posthog_dashboard.png)
-
-**Métriques surveillées :**
+**Métriques surveillées via PostHog :**
 - **Accuracy en production** : calculée à partir des feedbacks utilisateurs
 - **Taux d'erreur** : < 1% acceptable
 - **Temps de réponse API** : < 500ms (p95)
@@ -493,11 +490,13 @@ Comparaison de la distribution des tweets en production vs données d'entraînem
 
 ## Conclusion
 
-Ce projet d'analyse de sentiment pour Air Paradis illustre une démarche MLOps complète, de l'expérimentation à la production. Les trois approches comparées (TF-IDF, LSTM, BERT) offrent un spectre de solutions adaptées à différents contextes :
+Ce projet d'analyse de sentiment pour Air Paradis illustre une démarche MLOps complète, de l'expérimentation à la production. Les trois approches comparées (TF-IDF, BiLSTM, BERT) offrent des performances très similaires (~77-78% accuracy), avec une conclusion surprenante :
 
-- **TF-IDF + Régression Logistique** : baseline rapide et interprétable
-- **Word2Vec + LSTM** : meilleur rapport performance/coût (choix production)
-- **BERT** : performance maximale pour cas d'usage critiques
+- **TF-IDF + Régression Logistique** : meilleure performance (78.03%), rapidité exceptionnelle (choix production)
+- **Word2Vec + BiLSTM** : performances légèrement inférieures (77.51%), coût d'entraînement élevé
+- **BERT** : meilleur ROC-AUC (0.8622) mais F1-score plus faible, très coûteux en ressources
+
+Ce résultat rappelle qu'un modèle simple bien conçu peut surpasser des approches complexes, surtout sur des tâches de classification binaire avec des textes courts.
 
 L'industrialisation via MLOps (MLflow, Git, tests automatiques, CI/CD, monitoring) garantit la pérennité et la fiabilité du système. Le suivi continu avec PostHog et la stratégie d'amélioration itérative assurent l'adaptation du modèle aux évolutions du langage et des besoins métier.
 
@@ -506,9 +505,9 @@ Cette approche méthodologique est applicable à tout projet de ML en entreprise
 ---
 
 **Liens utiles :**
-- API de production : https://openclassrooms-projet7-xxxx.herokuapp.com
 - Interface Streamlit : https://airparadis-sentiment.streamlit.app
-- Repository GitHub : https://github.com/username/openclassrooms-projet7
+- Repository GitHub : https://github.com/tminichetti/openclassrooms-projet7
+- API : déployable localement ou sur Railway/Heroku
 - MLflow UI : http://localhost:5001 (en local)
 
 **Mots-clés :** MLOps, Deep Learning, NLP, Sentiment Analysis, BERT, LSTM, Word2Vec, MLflow, FastAPI, Heroku, PostHog
