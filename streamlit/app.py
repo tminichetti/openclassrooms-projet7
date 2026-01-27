@@ -284,7 +284,7 @@ if mode == "Tweet unique":
     # Zone de texte
     tweet_text = st.text_area(
         "Entrez le texte du tweet à analyser:",
-        placeholder="Exemple: This flight was amazing! Best experience ever!",
+        placeholder="Exemple: This flight was amazing!",
         height=100,
         max_chars=280
     )
