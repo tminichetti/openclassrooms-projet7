@@ -9,3 +9,6 @@ pip install --upgrade pip
 
 
 mlflow ui --port 5001 --backend-store-uri file:///home/thomas/mlruns
+
+
+test
